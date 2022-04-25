@@ -23,11 +23,12 @@ property < vertex_predecessor_t, Traits::edge_descriptor > > > > >,
 property < edge_capacity_t, long,
 property < edge_residual_capacity_t, long,
 property < edge_reverse_t, Traits::edge_descriptor > > > > Graph;
+typedef Traits::vertex_descriptor Vertex;
 
 
 class algorithm {
 public:
-    virtual long long find_flow(Graph& g, Traits::vertex_descriptor s, Traits::vertex_descriptor t) = 0;
+    virtual long long find_flow(Graph& g, Vertex s, Vertex t) = 0;
     std::string name;
 };
 

@@ -24,8 +24,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    algorithm* arr[ALGOS_COUNT] = { new learning_augmented(),new boykov_kolmogorov(), new push_relabel() };
-
 
     Graph g;
     property_map<Graph, edge_capacity_t>::type
@@ -37,6 +35,22 @@ int main(int argc, char* argv[]) {
     read_dimacs_max_flow(g, capacity, rev, s, t, input_graph);
     std::cout << "finished reading graph" << std::endl;
     input_graph.close();
+
+    std::ifstream input_preprocessed_flows("./data/preprocessed_flows.txt");
+    int num_ver = num_vertices(g);
+    int num_edge = num_edges(g)/2;
+    std::vector<std::pair<std::pair<int, int>, long> > vec;
+    for (int i = 0; i < num_edge; i++) {
+        int a, b, c;
+        input_preprocessed_flows >> a >> b >> c;
+        vec.push_back({{a-1, b-1}, c});
+    }
+
+    algorithm* arr[ALGOS_COUNT] = {
+            new boykov_kolmogorov(),
+            new push_relabel(),
+            new learning_augmented(vec)
+    };
 
     long flows_returned[ALGOS_COUNT];
 

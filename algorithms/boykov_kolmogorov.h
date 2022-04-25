@@ -11,7 +11,7 @@
 class boykov_kolmogorov: public algorithm {
 public:
     boykov_kolmogorov();
-    long long find_flow(Graph &g, Traits::vertex_descriptor s, Traits::vertex_descriptor t) override;
+    long long find_flow(Graph &g, Vertex s, Vertex t) override;
 };
 
 
