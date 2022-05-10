@@ -2,20 +2,22 @@
 // Created by Max Zub on 20/04/2022.
 //
 
-#ifndef MAXFLOWBENCHMARK_LEARNING_AUGMENTED_H
-#define MAXFLOWBENCHMARK_LEARNING_AUGMENTED_H
+#ifndef MAXFLOWBENCHMARK_LEARNING_AUGMENTED_ADD_EDGES_H
+#define MAXFLOWBENCHMARK_LEARNING_AUGMENTED_ADD_EDGES_H
 
 #include <queue>
 
 #include "algorithm.h"
 
 
-class learning_augmented: public algorithm {
+class learning_augmented_add_edges: public algorithm {
 public:
-    learning_augmented(std::vector<std::pair<std::pair<int, int>, long > > vec);
-    long long find_flow(Graph &g, Vertex s, Vertex t) override;
+    learning_augmented_add_edges(Graph &g, Vertex s, Vertex t, std::vector<std::pair<std::pair<int, int>, long > > precomputed_flows);
+    long long find_flow() override;
 private:
-    std::vector<std::pair<std::pair<int, int>, long> > precomputed_flows;
+    Graph *g;
+    Vertex s;
+    Vertex t;
     template<typename Mapping>
     bool bfs(Graph &g, Vertex s, Vertex t,
              vector_property_map<Vertex, Mapping> &pr,
@@ -39,4 +41,4 @@ private:
 };
 
 
-#endif //MAXFLOWBENCHMARK_LEARNING_AUGMENTED_H
+#endif //MAXFLOWBENCHMARK_LEARNING_AUGMENTED_ADD_EDGES_H

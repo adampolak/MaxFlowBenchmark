@@ -10,8 +10,11 @@
 
 class boykov_kolmogorov: public algorithm {
 public:
-    boykov_kolmogorov();
-    long long find_flow(Graph &g, Vertex s, Vertex t) override;
+    boykov_kolmogorov(Graph& g, Vertex s, Vertex t);
+    long long find_flow() override;
+private:
+    Graph *g;
+    Vertex s, t;
 };
 
 

@@ -10,8 +10,11 @@
 
 class push_relabel: public algorithm {
 public:
-    push_relabel();
-    long long find_flow(Graph &g, Vertex s, Vertex t) override;
+    push_relabel(Graph& g, Vertex s, Vertex t);
+    long long find_flow() override;
+private:
+    Graph *g;
+    Vertex s, t;
 };
 
 
