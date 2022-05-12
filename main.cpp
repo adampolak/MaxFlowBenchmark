@@ -23,7 +23,7 @@
 
 const int ALGOS_COUNT = 4;
 
-void learn(std::string graph_filename, int n_samples, int max_capacity, int X, std::string output, std::string storage) {
+void learn(std::string graph_filename, int n_samples, int max_capacity, int X) {
     std::ifstream input_graph(graph_filename);
     if (!input_graph) {
         std::cerr << "cannot open file: " << graph_filename << std::endl;
@@ -40,7 +40,7 @@ void learn(std::string graph_filename, int n_samples, int max_capacity, int X, s
     std::cerr << "read graph..." << std::endl;
     std::cout << "FIRSTLINE" << std::endl;
     learning learn;
-    learn.start(g, s, t, n_samples, max_capacity, X, storage);
+    learn.start(g, s, t, n_samples, max_capacity, X);
 }
 
 void algos(std::string graph_filename, std::string preprocessed_flows_filename) {
@@ -57,9 +57,9 @@ void algos(std::string graph_filename, std::string preprocessed_flows_filename) 
     property_map<Graph, edge_reverse_t>::type
             rev = get(edge_reverse, g[0]);
     Traits::vertex_descriptor s, t;
-    std::cerr << "reading graph" << std::endl;
+    std::cout << "reading graph" << std::endl;
     read_dimacs_max_flow(g[0], capacity, rev, s, t, input_graph);
-    std::cerr << "finished reading graph" << std::endl;
+    std::cout << "finished reading graph" << std::endl;
     input_graph.close();
     for (int i = 1; i < ALGOS_COUNT; i++) {
         std::ifstream input_graph(graph_filename);
@@ -95,7 +95,7 @@ void algos(std::string graph_filename, std::string preprocessed_flows_filename) 
     long flows_returned[ALGOS_COUNT];
 
     for (int i = 0; i < ALGOS_COUNT; i++) {
-        std::cerr << "looking for flow with \"" << arr[i]->name << "\" algorithm" << std::endl;
+        std::cout << "looking for flow with \"" << arr[i]->name << "\" algorithm" << std::endl;
 
         auto start_time = std::chrono::steady_clock::now();
         long found_flow = arr[i]->find_flow();
@@ -105,14 +105,14 @@ void algos(std::string graph_filename, std::string preprocessed_flows_filename) 
 
         double seconds_elapsed = (double)std::chrono::duration_cast<std::chrono::milliseconds>(time).count() / 1000.0;
 
-        std::cerr << "time elapsed: " << std::setprecision(3) << std::fixed << seconds_elapsed << std::endl;
-        std::cerr << std::endl;
+        std::cout << "time elapsed: " << std::setprecision(3) << std::fixed << seconds_elapsed << std::endl;
+        std::cout << std::endl;
     }
 
-    std::cerr << std::endl;
-    std::cerr << "flows_returned" << std::endl;
+    std::cout << std::endl;
+    std::cout << "flows_returned" << std::endl;
     for (int i = 0; i < ALGOS_COUNT; i++) {
-        std::cerr << arr[i]->name << " " << flows_returned[i] << std::endl;
+        std::cout << arr[i]->name << " " << flows_returned[i] << std::endl;
     }
 }
 
@@ -126,20 +126,18 @@ int main(int argc, char* argv[]) {
     std::string type = argv[1];
 
     if (type == "learn") {
-        if (argc < 8) {
+        if (argc < 6) {
             std::cerr << "incorrect args!";
         }
         std::string graph_filename = argv[2];
         int n_samples = atoi(argv[3]);
         int max_capacity = atoi(argv[4]);
         int X = atoi(argv[5]);
-        std::string output_filename = argv[6];
-        std::string storage_filename = argv[7];
-        learn(graph_filename, n_samples, max_capacity, X, output_filename, storage_filename);
+        learn(graph_filename, n_samples, max_capacity, X);
         return 0;
     }
 
-    if (argv[1] == "algo") {
+    if (type == "algo") {
         if (argc < 4) {
             std::cerr << "incorrect args!";
         }

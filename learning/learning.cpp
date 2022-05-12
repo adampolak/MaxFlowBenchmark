@@ -16,8 +16,7 @@ void learning::start(
         Vertex t,
         long long samples,
         long max_cap,
-        long X,
-        std::string storage_file
+        long X
         ) {
 
     MinCostGraph to_learn(num_vertices(g));
@@ -29,12 +28,13 @@ void learning::start(
 
     auto edges = boost::edges(g);
 
+    int n_edges = num_edges(g);
 
-    std::ofstream storage(storage_file);
+    std::vector<std::vector<long> > storage(n_edges);
 
     std::cerr << "n_edges: " << num_edges(g) << std::endl;
 
-    int subsample = samples/10;
+    int subsample = std::max(1ll, samples/10);
 
     int edge_i = 0;
     for (int i = 0; i < samples; i++) {
@@ -42,27 +42,30 @@ void learning::start(
         boykov_kolmogorov_max_flow(g, s, t);
         edge_i = 0;
         for (auto edge = edges.first; edge != edges.second; edge++, edge_i++) {
-            storage << edge_i << ":" << main_res_cap[*edge];
+            storage[edge_i].push_back(main_res_cap[*edge]);
         }
-        std::cerr << i+1 << "/" << samples << " samples processed\r";
-        std::cerr.flush();
+        if (i % subsample == 0) {
+            std::cerr << i + 1 << "/" << samples << " samples processed\r";
+            std::cerr.flush();
+        }
     }
     std::cerr << std::endl;
-    storage.close();
 
     std::cerr << "start processing edges..." << std::endl;
+    int subedge = std::max(1, n_edges/1000);
     edge_i = 0;
-    int n_edges = num_edges(g);
     for (auto edge = edges.first; edge != edges.second; edge++, edge_i++) {
         Traits::vertex_descriptor u, v;
         u = source(*edge, g);
         v = target(*edge, g);
-        std::vector<long> vec(get_computed_flows(edge_i, storage_file));
+        std::vector<long> vec(storage[edge_i]);
         sort(vec.begin(), vec.end());
         add_edge(to_learn, u, v, vec, rev_edge, learn_res_cap, wght, max_cap);
 
-        std::cerr << edge_i+1 << "/" << n_edges << " edges processed\r";
-        std::cerr.flush();
+        if (edge_i % subedge == 0) {
+            std::cerr << edge_i + 1 << "/" << n_edges << " edges processed\r";
+            std::cerr.flush();
+        }
     }
     std::cerr << std::endl;
 
@@ -74,21 +77,6 @@ void learning::start(
 
     print_learned_edges(to_learn);
 
-}
-
-std::vector<long> learning::get_computed_flows(int need_edge_i, std::string storage_file) {
-    std::ifstream storage(storage_file);
-    std::vector<long> vec;
-    std::string str;
-    while(storage >> str) {
-        int pos = str.find(':');
-        int edge_i = atoi(str.substr(0, pos).c_str());
-        if (edge_i == need_edge_i) {
-            long flow = atol(str.substr(pos, str.size()-pos).c_str());
-            vec.push_back(flow);
-        }
-    }
-    return vec;
 }
 
 void learning::print_learned_edges(MinCostGraph &g) {

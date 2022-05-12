@@ -5,6 +5,7 @@
 #include "learning_augmented_paths_removal.h"
 #include <iostream>
 #include <queue>
+#include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 
 learning_augmented_paths_removal::learning_augmented_paths_removal(Graph &g, Vertex s, Vertex t,
                                                                    std::vector<std::pair<std::pair<int, int>, long>> precomputed_flows) {
@@ -205,9 +206,9 @@ long long learning_augmented_paths_removal::find_flow() {
         v = target(*it, *g);
         if (u == s)
             cur_flow += res_cap[*it];
+        cap[*it] = res_cap[*it];
     }
 
-    auto dinic = Dinic(*g, s, t);
-    return dinic.flow() + cur_flow;
+    return boykov_kolmogorov_max_flow(*g, s, t) + cur_flow;
 }
 

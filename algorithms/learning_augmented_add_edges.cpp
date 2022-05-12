@@ -60,7 +60,6 @@ long long learning_augmented_add_edges::find_flow() {
             res_cap[*it] = 0;
         }
     }
-    std::cout << "added" << std::endl;
     for (auto it = badEdges.begin(); it != badEdges.end(); it++) {
         Vertex u, v;
         std::tie(u, v) = it->first;
@@ -111,13 +110,11 @@ long long learning_augmented_add_edges::find_flow() {
         }
     }
     edges = boost::edges(*g);
-    std::cout << "before dinic" << std::endl;
     for (auto it = edges.first; it != edges.second; it++) {
         if (cap[*it] > 0) {
             res_cap[rev_edge[*it]] = cap[*it] - res_cap[*it];
         }
     }
-    std::cout << "here" << std::endl;
 
 
     for (auto it = edges.first; it != edges.second; it++) {
@@ -126,12 +123,10 @@ long long learning_augmented_add_edges::find_flow() {
         v = target(*it, *g);
         if (u == s)
             cur_flow += cap[*it]-res_cap[*it];
-        //res_cap[*it] = cap[*it];
-        std::cout << u << ' ' << v << ' ' << res_cap[*it] << std::endl;
+        cap[*it] = res_cap[*it];
     }
 
 
-    auto dinic = Dinic(*g, s, t);
-    return dinic.flow()-redundant_flow*2+cur_flow;
+    return boykov_kolmogorov_max_flow(*g, s, t)-redundant_flow*2+cur_flow;
 }
 

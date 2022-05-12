@@ -30,8 +30,7 @@ public:
             Vertex t,
             long long learn_iterations,
             long max_cap,
-            long X,
-            std::string storage_file
+            long X
             );
 private:
     void add_edge(
@@ -45,7 +44,6 @@ private:
             long max_cap
             );
     void print_learned_edges(MinCostGraph& g);
-    std::vector<long> get_computed_flows(int need_edge_i, std::string storage_file);
 };
 
 
