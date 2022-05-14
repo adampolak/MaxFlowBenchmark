@@ -10,7 +10,6 @@
 #include "algorithms/learning_augmented_paths_removal.h"
 #include "learning/learning.h"
 
-
 /**
  *    usage:
  *    1. run algorithms benchmark:
@@ -72,17 +71,15 @@ void algos(std::string graph_filename, std::string preprocessed_flows_filename) 
     }
 
     std::ifstream input_preprocessed_flows(preprocessed_flows_filename);
-    if (!input_preprocessed_flows) {
-        std::cerr << "cannot open file " << preprocessed_flows_filename << std::endl;
-        exit(1);
-    }
     int num_ver = num_vertices(g[0]);
     int num_edge = num_edges(g[0])/2;
     std::vector<std::pair<std::pair<int, int>, long> > vec;
-    for (int i = 0; i < num_edge; i++) {
-        int a, b, c;
-        input_preprocessed_flows >> a >> b >> c;
-        vec.push_back({{a-1, b-1}, c});
+    if (input_preprocessed_flows) {
+        for (int i = 0; i < num_edge; i++) {
+            int a, b, c;
+            input_preprocessed_flows >> a >> b >> c;
+            vec.push_back({{a-1, b-1}, c});
+        }
     }
 
     algorithm* arr[ALGOS_COUNT] = {

@@ -6,6 +6,8 @@
 #define MAXFLOWBENCHMARK_LEARNING_H
 
 #include <boost/graph/adjacency_list.hpp>
+#include <lemon/list_graph.h>
+#include <lemon/cost_scaling.h>
 using namespace boost;
 
 typedef adjacency_list_traits < vecS, vecS, directedS > Traits;
@@ -34,16 +36,19 @@ public:
             );
 private:
     void add_edge(
-            MinCostGraph& g,
-            Vertex u,
-            Vertex v,
-            std::vector<long> computed_flows,
-            property_map<MinCostGraph, edge_reverse_t>::type rev_edge,
-            property_map<MinCostGraph, edge_residual_capacity_t>::type res_cap,
-            property_map<MinCostGraph, edge_weight_t>::type wght,
+            lemon::ListDigraph &g,
+            lemon::ListDigraph::Node u,
+            lemon::ListDigraph::Node v,
+            std::vector<long> &computed_flows,
+            lemon::ListDigraph::ArcMap<long> &cap,
+            lemon::ListDigraph::ArcMap<long> &wght,
             long max_cap
             );
-    void print_learned_edges(MinCostGraph& g);
+    void print_learned_edges(
+            lemon::ListDigraph &g,
+            lemon::CostScaling<lemon::ListDigraph> &cs,
+            std::map<lemon::ListDigraph::Node, int> &mp_vertices
+        );
 };
 
 

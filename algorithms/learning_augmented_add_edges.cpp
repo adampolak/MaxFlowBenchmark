@@ -12,7 +12,6 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
     this->g = &g;
     this->s = s;
     this->t = t;
-    sort(precomputed_flows.begin(), precomputed_flows.end());
 
 
     property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, g);
@@ -22,6 +21,7 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
     auto edges = boost::edges(g);
 
     if (!precomputed_flows.empty()) {
+        sort(precomputed_flows.begin(), precomputed_flows.end());
         int iter = 0;
         for (auto it = edges.first; it != edges.second; it++) {
             Traits::vertex_descriptor u, v;
