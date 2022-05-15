@@ -13,8 +13,9 @@ learning_augmented_paths_removal::learning_augmented_paths_removal(Graph &g, Ver
     this->g = &g;
     this->s = s;
     this->t = t;
-    sort(precomputed_flows.begin(), precomputed_flows.end());
-
+    std::map<std::pair<int, int>, long> prec_flows;
+    for (int i = 0; i < precomputed_flows.size(); i++)
+        prec_flows[precomputed_flows[i].first] = precomputed_flows[i].second;
 
     property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, g);
     property_map<Graph, edge_residual_capacity_t>::type res_cap = get(edge_residual_capacity, g);
@@ -22,20 +23,16 @@ learning_augmented_paths_removal::learning_augmented_paths_removal(Graph &g, Ver
 
     auto edges = boost::edges(g);
 
-
-    if (!precomputed_flows.empty()) {
-        int iter = 0;
-        for (auto it = edges.first; it != edges.second; it++) {
-            Traits::vertex_descriptor u, v;
-            if (cap[*it] == 0)
-                continue;
-            u = source(*it, g);
-            v = target(*it, g);
-            while (precomputed_flows[iter].first != std::pair<int, int>(u, v)) {
-                ++iter;
-            }
-            res_cap[*it] = cap[*it] - precomputed_flows[iter].second;
-        }
+    for (auto it = edges.first; it != edges.second; it++) {
+        Traits::vertex_descriptor u, v;
+        if (cap[*it] == 0)
+            continue;
+        u = source(*it, g);
+        v = target(*it, g);
+        int precflow = prec_flows[{u, v}];
+        if (precflow == 0)
+            precflow = prec_flows[{v, u}];
+        res_cap[*it] = cap[*it] - precflow;
     }
 }
 

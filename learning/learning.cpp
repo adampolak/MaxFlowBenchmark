@@ -67,8 +67,6 @@ void learning::start(
     int subedge = std::max(1, n_edges/1000);
     edge_i = 0;
     for (auto edge = edges.first; edge != edges.second; edge++, edge_i++) {
-        if (main_cap[*edge] == 0)
-            continue;
         Traits::vertex_descriptor u, v;
         u = source(*edge, g);
         v = target(*edge, g);
@@ -107,9 +105,13 @@ void learning::print_learned_edges(
     lemon::ListDigraph::ArcMap<long> flowMap(g);
     cs.flowMap(flowMap);
 
+    std::map<std::pair<int, int>, int> mp;
+
     for (lemon::ListDigraph::ArcIt a(g); a != lemon::INVALID; ++a) {
-        std::cout << mp_vertices[g.source(a)] << ' ' << mp_vertices[g.target(a)] << ' ' << flowMap[a] << std::endl;
+        mp[{mp_vertices[g.source(a)], mp_vertices[g.target(a)]}] += flowMap[a];
     }
+    for (auto it = mp.begin(); it != mp.end(); it++)
+        std::cout << it->first.first << ' ' << it->first.second << ' ' << it->second << std::endl;
 }
 
 void learning::add_edge(

@@ -13,6 +13,9 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
     this->s = s;
     this->t = t;
 
+    std::map<std::pair<int, int>, long> prec_flows;
+    for (int i = 0; i < precomputed_flows.size(); i++)
+        prec_flows[precomputed_flows[i].first] = precomputed_flows[i].second;
 
     property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, g);
     property_map<Graph, edge_residual_capacity_t>::type res_cap = get(edge_residual_capacity, g);
@@ -20,21 +23,17 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
 
     auto edges = boost::edges(g);
 
-    if (!precomputed_flows.empty()) {
-        sort(precomputed_flows.begin(), precomputed_flows.end());
-        int iter = 0;
-        for (auto it = edges.first; it != edges.second; it++) {
-            Traits::vertex_descriptor u, v;
-            if (cap[*it] == 0)
-                continue;
-            u = source(*it, g);
-            v = target(*it, g);
-            while (precomputed_flows[iter].first != std::pair<int, int>(u, v)) {
-                ++iter;
-            }
-            res_cap[*it] = cap[*it] - precomputed_flows[iter].second;
-        }
+    std::cout << "constructing graph" << std::endl;
+    for (auto it = edges.first; it != edges.second; it++) {
+        Traits::vertex_descriptor u, v;
+        if (cap[*it] < cap[rev_edge[*it]])
+            continue;
+        u = source(*it, g);
+        v = target(*it, g);
+        int precflow = prec_flows[{u, v}];
+        res_cap[*it] = cap[*it] - precflow;
     }
+    std::cout << "finished constructing" << std::endl;
 }
 
 long long learning_augmented_add_edges::find_flow() {
