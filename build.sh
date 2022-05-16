@@ -7,5 +7,5 @@ make -C ./deps/lemon/build
 
 mkdir build
 
-cmake -S . -B /build
+cmake -S . -B ./build
 make -C ./build
