@@ -2,6 +2,7 @@
 #include <fstream>
 
 #include <boost/graph/read_dimacs.hpp>
+#include <chrono>
 
 #include "algorithms/algorithm.h"
 #include "algorithms/boykov_kolmogorov.h"
@@ -9,6 +10,7 @@
 #include "algorithms/learning_augmented_add_edges.h"
 #include "algorithms/learning_augmented_paths_removal.h"
 #include "learning/learning.h"
+#include "algorithms/dinic_algo.h"
 
 /**
  *    usage:
@@ -22,7 +24,7 @@
 
 const int ALGOS_COUNT = 4;
 
-void learn(std::string graph_filename, int n_samples, int max_capacity, int X) {
+void learn(std::string graph_filename, int n_samples, int max_capacity, double X) {
     std::ifstream input_graph(graph_filename);
     if (!input_graph) {
         std::cerr << "cannot open file: " << graph_filename << std::endl;
@@ -37,7 +39,6 @@ void learn(std::string graph_filename, int n_samples, int max_capacity, int X) {
     std::cerr << "reading graph..." << std::endl;
     read_dimacs_max_flow(g, capacity, rev, s, t, input_graph);
     std::cerr << "read graph..." << std::endl;
-    std::cout << "FIRSTLINE" << std::endl;
     learning learn;
     learn.start(g, s, t, n_samples, max_capacity, X);
 }
@@ -85,8 +86,9 @@ void algos(std::string graph_filename, std::string preprocessed_flows_filename) 
     algorithm* arr[ALGOS_COUNT] = {
             new boykov_kolmogorov(g[0], s, t),
             new push_relabel(g[1], s, t),
-            new learning_augmented_add_edges(g[2], s, t, vec),
-            new learning_augmented_paths_removal(g[3], s, t, vec)
+            new dinic_algo(g[2], s, t),
+            new learning_augmented_add_edges(g[3], s, t, vec),
+            //new learning_augmented_paths_removal(g[3], s, t, vec)
     };
 
     long flows_returned[ALGOS_COUNT];
@@ -129,7 +131,9 @@ int main(int argc, char* argv[]) {
         std::string graph_filename = argv[2];
         int n_samples = atoi(argv[3]);
         int max_capacity = atoi(argv[4]);
-        int X = atoi(argv[5]);
+        std::stringstream strIn(argv[5]);
+        double X;
+        strIn >> X;
         learn(graph_filename, n_samples, max_capacity, X);
         return 0;
     }

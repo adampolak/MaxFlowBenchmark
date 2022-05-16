@@ -30,8 +30,6 @@ learning_augmented_paths_removal::learning_augmented_paths_removal(Graph &g, Ver
         u = source(*it, g);
         v = target(*it, g);
         int precflow = prec_flows[{u, v}];
-        if (precflow == 0)
-            precflow = prec_flows[{v, u}];
         res_cap[*it] = cap[*it] - precflow;
     }
 }
@@ -57,7 +55,7 @@ bool learning_augmented_paths_removal::bfs(Graph &g, Vertex s, Vertex t,
         q.pop();
         auto out_edg = out_edges(v, g);
         for (auto it = out_edg.first; it != out_edg.second; it++) {
-            if (res_cap[*it] == cap[*it])
+            if (res_cap[*it] == cap[*it] || cap[*it] == 0)
                 continue;
             Vertex u = target(*it, g);
             if (pr[u] == -1) {
@@ -81,6 +79,7 @@ void learning_augmented_paths_removal::dec_path(Graph &g, Vertex s, Vertex t,
         auto out_edg = out_edges(p, g);
         for (auto it = out_edg.first; it != out_edg.second; it++) {
             Vertex u = target(*it, g);
+            if (cap[*it] == 0) continue;
             if (u == t) {
                 res_cap[*it] += 1;
                 break;
@@ -114,7 +113,7 @@ std::pair<bool, Vertex> learning_augmented_paths_removal::dfs(Graph &g, Vertex v
 }
 
 template<typename Mapping>
-bool learning_augmented_paths_removal::fnd_cycle(Graph &g, Vertex s, Vertex t,
+bool learning_augmented_paths_removal::fnd_cycle(Graph &g, Vertex s, Vertex t, long edg_it,
                                    vector_property_map<Vertex, Mapping> &pr,
                                    property_map<Graph, edge_capacity_t>::type &cap,
                                    property_map<Graph, edge_residual_capacity_t>::type &res_cap) {
@@ -134,6 +133,8 @@ bool learning_augmented_paths_removal::fnd_cycle(Graph &g, Vertex s, Vertex t,
                 exit(0);
             auto out_edg = out_edges(p, g);
             for (auto it = out_edg.first; it != out_edg.second; it++) {
+                if (cap[*it] == 0)
+                    continue;
                 Vertex u = target(*it, g);
                 if (u == s) {
                     res_cap[*it] += 1;
@@ -144,6 +145,8 @@ bool learning_augmented_paths_removal::fnd_cycle(Graph &g, Vertex s, Vertex t,
         }
         auto out_edg = out_edges(scp, g);
         for (auto it = out_edg.first; it != out_edg.second; it++) {
+            if (cap[*it] == 0)
+                continue;
             Vertex u = target(*it, g);
             if (u == t) {
                 res_cap[*it] += 1;
@@ -172,10 +175,10 @@ long long learning_augmented_paths_removal::find_flow() {
     for (auto it = edges.first; it != edges.second; it++) {
         while (res_cap[*it] < 0) {
             Traits::vertex_descriptor u, v;
+            std::cerr << "edg " << u << ' ' << v << ' ' << res_cap[*it] << std::endl;
             u = source(*it, *g);
             v = target(*it, *g);
-
-            if (fnd_cycle(*g, u, v, prMap, cap, res_cap)) {
+            if (fnd_cycle(*g, u, v, cap[*it], prMap, cap, res_cap)) {
 
             } else if (bfs(*g, s, u, prMap, cap, res_cap) && bfs(*g, v, t, prMap, cap, res_cap)) {
                 dec_path(*g, s, u, prMap, cap, res_cap);
@@ -202,7 +205,7 @@ long long learning_augmented_paths_removal::find_flow() {
         u = source(*it, *g);
         v = target(*it, *g);
         if (u == s)
-            cur_flow += res_cap[*it];
+            cur_flow += cap[*it]-res_cap[*it];
         cap[*it] = res_cap[*it];
     }
 

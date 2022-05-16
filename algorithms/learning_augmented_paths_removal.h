@@ -26,7 +26,7 @@ private:
                   property_map<Graph, edge_capacity_t>::type &cap,
                   property_map<Graph, edge_residual_capacity_t>::type &res_cap);
     template<typename Mapping>
-    bool fnd_cycle(Graph &g, Vertex s, Vertex t,
+    bool fnd_cycle(Graph &g, Vertex s, Vertex t, long edg_it,
                    vector_property_map<Vertex, Mapping> &pr,
                    property_map<Graph, edge_capacity_t>::type &cap,
                    property_map<Graph, edge_residual_capacity_t>::type &res_cap);

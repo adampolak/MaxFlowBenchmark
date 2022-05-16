@@ -26,7 +26,7 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
     std::cout << "constructing graph" << std::endl;
     for (auto it = edges.first; it != edges.second; it++) {
         Traits::vertex_descriptor u, v;
-        if (cap[*it] < cap[rev_edge[*it]])
+        if (cap[*it] == 0)
             continue;
         u = source(*it, g);
         v = target(*it, g);
@@ -70,7 +70,8 @@ long long learning_augmented_add_edges::find_flow() {
             std::tie(e2, n2) = add_edge(v, s, *g);
             cap[e1] = decrease;
             cap[e2] = 0;
-            res_cap[e1] = 0;
+            res_cap[e1] = 0; // flow = decrease - 0 = decrease ,   -flow = 0 - X = -X
+            res_cap[e2] = decrease;
             rev_edge[e1] = e2;
             rev_edge[e2] = e1;
         }
@@ -82,6 +83,7 @@ long long learning_augmented_add_edges::find_flow() {
             cap[e1] = decrease;
             cap[e2] = 0;
             res_cap[e1] = 0;
+            res_cap[e2] = decrease;
             rev_edge[e1] = e2;
             rev_edge[e2] = e1;
         }
@@ -92,7 +94,7 @@ long long learning_augmented_add_edges::find_flow() {
             std::tie(e2, n2) = add_edge(u, s, *g);
             cap[e1] = decrease;
             cap[e2] = 0;
-            res_cap[e1] = decrease;
+            res_cap[e1] = decrease; //flow = decrease - decrease = 0, 0 = 0-0 = 0
             rev_edge[e1] = e2;
             rev_edge[e2] = e1;
         }
@@ -111,7 +113,7 @@ long long learning_augmented_add_edges::find_flow() {
     edges = boost::edges(*g);
     for (auto it = edges.first; it != edges.second; it++) {
         if (cap[*it] > 0) {
-            res_cap[rev_edge[*it]] = cap[*it] - res_cap[*it];
+            //res_cap[rev_edge[*it]] = cap[*it] - res_cap[*it];
         }
     }
 
@@ -122,10 +124,10 @@ long long learning_augmented_add_edges::find_flow() {
         v = target(*it, *g);
         if (u == s)
             cur_flow += cap[*it]-res_cap[*it];
-        cap[*it] = res_cap[*it];
+        //cap[*it] = res_cap[*it];
     }
 
 
-    return boykov_kolmogorov_max_flow(*g, s, t)-redundant_flow*2+cur_flow;
+    return boykov_kolmogorov_max_flow(*g, s, t)-redundant_flow*2/*+cur_flow*/;
 }
 

@@ -4,7 +4,7 @@
 
 #include "random_util.h"
 
-random_util::random_util(long max_cap, long X): max_cap(max_cap), X(X) {};
+random_util::random_util(long max_cap, double X): max_cap(max_cap), X(X) {};
 
 void random_util::randomize_capacities(MinCostGraph &g, std::default_random_engine &generator) {
 
@@ -12,15 +12,14 @@ void random_util::randomize_capacities(MinCostGraph &g, std::default_random_engi
     property_map<MinCostGraph, edge_capacity_t>::type cap = get(edge_capacity, g);
     auto edges = boost::edges(g);
 
-    double X_div = double(X) / 8.0;
 
-    std::normal_distribution<double> distribution(max_cap, double(max_cap)*X_div);
-    //TODO: PROBLEM SEED
 
     for (auto edge = edges.first; edge != edges.second; edge++) {
         if (cap[*edge] == 0)
             continue;
+        std::normal_distribution<double> distribution(cap[*edge], double(cap[*edge])*X);
         long gen_cap = std::max(long(distribution(generator)), 1l);
+        gen_cap = std::min(gen_cap, max_cap);
         cap[*edge] = res_cap[*edge] = gen_cap;
     }
 }

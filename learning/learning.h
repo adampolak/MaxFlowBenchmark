@@ -28,13 +28,14 @@ class learning {
 public:
     void start(
             MinCostGraph& g,
-            Vertex s,
-            Vertex t,
+            Vertex l_s,
+            Vertex l_t,
             long long learn_iterations,
             long max_cap,
-            long X
+            double X
             );
 private:
+    Vertex s, t;
     void add_edge(
             lemon::ListDigraph &g,
             lemon::ListDigraph::Node u,
@@ -47,7 +48,8 @@ private:
     void print_learned_edges(
             lemon::ListDigraph &g,
             lemon::CostScaling<lemon::ListDigraph> &cs,
-            std::map<lemon::ListDigraph::Node, int> &mp_vertices
+            std::map<lemon::ListDigraph::Node, int> &mp_vertices,
+            lemon::ListDigraph::ArcMap<long> &cap
         );
 };
 

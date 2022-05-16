@@ -10,7 +10,7 @@
 
 class random_util {
 public:
-    random_util(long max_cap, long X);
+    random_util(long max_cap, double X);
     void randomize_capacities(MinCostGraph &g, std::default_random_engine &generator);
 private:
     long max_cap;

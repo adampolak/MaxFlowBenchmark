@@ -11,13 +11,15 @@
 
 void learning::start(
         MinCostGraph &g,
-        Vertex s,
-        Vertex t,
+        Vertex l_s,
+        Vertex l_t,
         long long samples,
         long max_cap,
-        long X
+        double X
         ) {
 
+    this->s = l_s;
+    this->t = l_t;
     lemon::ListDigraph to_learn_lemon;
     int n_vertices = num_vertices(g);
     std::vector<lemon::ListDigraph::Node> nodes_lemon(n_vertices);
@@ -52,8 +54,10 @@ void learning::start(
     int edge_i = 0;
     for (int i = 0; i < samples; i++) {
         rand_gen.randomize_capacities(g, generator);
+        boykov_kolmogorov_max_flow(g, s, t);
         edge_i = 0;
         for (auto edge = edges.first; edge != edges.second; edge++, edge_i++) {
+            if (main_cap[*edge] == 0) continue;
             storage[edge_i].push_back(main_res_cap[*edge]);
         }
         if (i % subsample == 0) {
@@ -67,6 +71,7 @@ void learning::start(
     int subedge = std::max(1, n_edges/1000);
     edge_i = 0;
     for (auto edge = edges.first; edge != edges.second; edge++, edge_i++) {
+        if (main_cap[*edge] == 0) continue;
         Traits::vertex_descriptor u, v;
         u = source(*edge, g);
         v = target(*edge, g);
@@ -75,8 +80,8 @@ void learning::start(
         add_edge(to_learn_lemon, nodes_lemon[u], nodes_lemon[v], vec, cap, wght, max_cap);
 
         if (edge_i % subedge == 0) {
-            std::cerr << edge_i + 1 << "/" << n_edges << " edges processed\r";
-            std::cerr.flush();
+            //std::cerr << edge_i + 1 << "/" << n_edges << " edges processed\r";
+            //std::cerr.flush();
         }
     }
     std::cerr << std::endl;
@@ -85,21 +90,26 @@ void learning::start(
 
     std::cerr << "min cost flow start..." << std::endl;
 
+    lemon::ListDigraph::Arc ts_edge = to_learn_lemon.addArc(nodes_lemon[t], nodes_lemon[s]);
+    cap[ts_edge] = 1e9;
+    wght[ts_edge] = 0;
+
     lemon::CostScaling<lemon::ListDigraph> cs(to_learn_lemon);
-    cs.upperMap(cap).costMap(wght).stSupply(nodes_lemon[s], nodes_lemon[t], 1e9).run();
+    cs.upperMap(cap).costMap(wght).run();
 
     std::cerr << "min cost flow finish..." << std::endl;
 
     std::cerr << "total cost: " << cs.totalCost() << std::endl;
 
-    print_learned_edges(to_learn_lemon, cs, mp_vertices);
+    print_learned_edges(to_learn_lemon, cs, mp_vertices, cap);
 
 }
 
 void learning::print_learned_edges(
         lemon::ListDigraph &g,
         lemon::CostScaling<lemon::ListDigraph> &cs,
-        std::map<lemon::ListDigraph::Node, int> &mp_vertices
+        std::map<lemon::ListDigraph::Node, int> &mp_vertices,
+        lemon::ListDigraph::ArcMap<long> &cap
     ) {
 
     lemon::ListDigraph::ArcMap<long> flowMap(g);
@@ -108,10 +118,12 @@ void learning::print_learned_edges(
     std::map<std::pair<int, int>, int> mp;
 
     for (lemon::ListDigraph::ArcIt a(g); a != lemon::INVALID; ++a) {
+        if (mp_vertices[g.source(a)] == t && mp_vertices[g.target(a)] == s && cap[a] == 1e9)
+            continue;
         mp[{mp_vertices[g.source(a)], mp_vertices[g.target(a)]}] += flowMap[a];
     }
     for (auto it = mp.begin(); it != mp.end(); it++)
-        std::cout << it->first.first << ' ' << it->first.second << ' ' << it->second << std::endl;
+        std::cout << it->first.first+1 << ' ' << it->first.second+1 << ' ' << it->second << std::endl;
 }
 
 void learning::add_edge(

@@ -52,7 +52,7 @@ struct Dinic {
         ptr.resize(n);
         auto edge = edges(g);
         for (auto it = edge.first; it != edge.second; it++) {
-            //res_cap[*it] = cap[*it];
+            res_cap[*it] = cap[*it];
         }
     }
 
