@@ -4,7 +4,7 @@
 
 #include "random_util.h"
 
-random_util::random_util(long max_cap, double X): max_cap(max_cap), X(X) {};
+random_util::random_util(double X): max_cap(max_cap), X(X) {};
 
 void random_util::randomize_capacities(MinCostGraph &g, std::default_random_engine &generator) {
 

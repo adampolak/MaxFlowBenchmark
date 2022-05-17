@@ -31,7 +31,6 @@ public:
             Vertex l_s,
             Vertex l_t,
             long long learn_iterations,
-            long max_cap,
             double X
             );
 private:
@@ -42,8 +41,7 @@ private:
             lemon::ListDigraph::Node v,
             std::vector<long> &computed_flows,
             lemon::ListDigraph::ArcMap<long> &cap,
-            lemon::ListDigraph::ArcMap<long> &wght,
-            long max_cap
+            lemon::ListDigraph::ArcMap<long> &wght
             );
     void print_learned_edges(
             lemon::ListDigraph &g,

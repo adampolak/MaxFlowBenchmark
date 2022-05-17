@@ -3,6 +3,7 @@
 
 #include <boost/graph/read_dimacs.hpp>
 #include <chrono>
+#include <iomanip>
 
 #include "algorithms/algorithm.h"
 #include "algorithms/boykov_kolmogorov.h"
@@ -18,13 +19,13 @@
  *       algo graph_filename preprocessed_flows_filename
  *
  *    2. run learning
- *       learn graph_filename n_samples max_capacity X
+ *       learn graph_filename n_samples X
  *
  */
 
 const int ALGOS_COUNT = 4;
 
-void learn(std::string graph_filename, int n_samples, int max_capacity, double X) {
+void learn(std::string graph_filename, int n_samples, double X) {
     std::ifstream input_graph(graph_filename);
     if (!input_graph) {
         std::cerr << "cannot open file: " << graph_filename << std::endl;
@@ -40,7 +41,7 @@ void learn(std::string graph_filename, int n_samples, int max_capacity, double X
     read_dimacs_max_flow(g, capacity, rev, s, t, input_graph);
     std::cerr << "read graph..." << std::endl;
     learning learn;
-    learn.start(g, s, t, n_samples, max_capacity, X);
+    learn.start(g, s, t, n_samples, X);
 }
 
 void algos(std::string graph_filename, std::string preprocessed_flows_filename) {
@@ -125,16 +126,15 @@ int main(int argc, char* argv[]) {
     std::string type = argv[1];
 
     if (type == "learn") {
-        if (argc < 6) {
+        if (argc < 5) {
             std::cerr << "incorrect args!";
         }
         std::string graph_filename = argv[2];
         int n_samples = atoi(argv[3]);
-        int max_capacity = atoi(argv[4]);
-        std::stringstream strIn(argv[5]);
+        std::stringstream strIn(argv[4]);
         double X;
         strIn >> X;
-        learn(graph_filename, n_samples, max_capacity, X);
+        learn(graph_filename, n_samples, X);
         return 0;
     }
 

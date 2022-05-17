@@ -6,6 +6,8 @@
 #include <iostream>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <utility>
+#include <chrono>
+#include <iomanip>
 
 learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, Vertex t, std::vector<std::pair<std::pair<int, int>, long > > precomputed_flows ) {
     this->name = "learning_augmented_add_edges";
@@ -37,6 +39,7 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
 }
 
 long long learning_augmented_add_edges::find_flow() {
+    auto start_time = std::chrono::steady_clock::now();
     long long cur_flow = 0;
 
     property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, *g);
@@ -124,10 +127,22 @@ long long learning_augmented_add_edges::find_flow() {
         v = target(*it, *g);
         if (u == s)
             cur_flow += cap[*it]-res_cap[*it];
-        //cap[*it] = res_cap[*it];
+        cap[*it] = res_cap[*it];
     }
+    auto time = std::chrono::steady_clock::now() - start_time;
+    double seconds_elapsed = (double)std::chrono::duration_cast<std::chrono::milliseconds>(time).count() / 1000.0;
 
+    std::cout << "time elapsed during preparation: " << std::setprecision(3) << std::fixed << seconds_elapsed << std::endl;
+    std::cout << std::endl;
 
-    return boykov_kolmogorov_max_flow(*g, s, t)-redundant_flow*2/*+cur_flow*/;
+    auto start_time_flow = std::chrono::steady_clock::now();
+    long long get_flow = boykov_kolmogorov_max_flow(*g, s, t)-redundant_flow*2+cur_flow;
+    auto time_flow = std::chrono::steady_clock::now() - start_time_flow;
+    double seconds_elapsed_flow = (double)std::chrono::duration_cast<std::chrono::milliseconds>(time_flow).count() / 1000.0;
+
+    std::cout << "time elapsed during flow search: " << std::setprecision(3) << std::fixed << seconds_elapsed_flow << std::endl;
+    std::cout << std::endl;
+    return get_flow;
+
 }
 
