@@ -40,6 +40,9 @@ learning_augmented_add_edges::learning_augmented_add_edges(
         v = target(*it, g);
         auto frst_flow = prec_flows[{u, v}].begin();
         int precflow = *frst_flow;
+        if (prec_flows[{u, v}].empty()) {
+            assert(0);
+        }
         prec_flows[{u, v}].erase(frst_flow);
         res_cap[*it] = cap[*it] - precflow;
         assert(cap[rev_edge[*it]] == 0);

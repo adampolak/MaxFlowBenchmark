@@ -17,7 +17,7 @@
 /**
  *    usage:
  *    1. run algorithms benchmark:
- *       algo graph_filename preprocessed_flows_filename results_file
+ *       algo graph_filename preprocessed_flows_filename results_file test_samples_number
  *
  *    2. run learning
  *       learn graph_filename n_samples X
