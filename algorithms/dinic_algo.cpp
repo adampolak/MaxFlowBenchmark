@@ -14,5 +14,6 @@ dinic_algo::dinic_algo(Graph& g, Vertex s, Vertex t) {
 
 long long dinic_algo::find_flow() {
     Dinic dinic(*g, s, t);
+    return 0;
     return dinic.flow();
 }

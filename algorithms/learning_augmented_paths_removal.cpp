@@ -13,9 +13,9 @@ learning_augmented_paths_removal::learning_augmented_paths_removal(Graph &g, Ver
     this->g = &g;
     this->s = s;
     this->t = t;
-    std::map<std::pair<int, int>, long> prec_flows;
+    std::map<std::pair<int, int>, std::multiset<long> > prec_flows;
     for (int i = 0; i < precomputed_flows.size(); i++)
-        prec_flows[precomputed_flows[i].first] = precomputed_flows[i].second;
+        prec_flows[precomputed_flows[i].first].insert(precomputed_flows[i].second);
 
     property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, g);
     property_map<Graph, edge_residual_capacity_t>::type res_cap = get(edge_residual_capacity, g);
@@ -29,8 +29,12 @@ learning_augmented_paths_removal::learning_augmented_paths_removal(Graph &g, Ver
             continue;
         u = source(*it, g);
         v = target(*it, g);
-        int precflow = prec_flows[{u, v}];
+        auto frst_flow = prec_flows[{u, v}].begin();
+        int precflow = *frst_flow;
+        prec_flows[{u, v}].erase(frst_flow);
         res_cap[*it] = cap[*it] - precflow;
+        assert(cap[rev_edge[*it]] == 0);
+        res_cap[rev_edge[*it]] = precflow;
     }
 }
 
@@ -189,6 +193,7 @@ long long learning_augmented_paths_removal::find_flow() {
                 std::cerr << "SOMETHING IS WRONG" << std::endl;
                 exit(0);
             }
+            assert_network_flow(*g);
         }
     }
 

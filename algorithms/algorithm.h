@@ -26,6 +26,7 @@ property < edge_capacity_t, long,
 property < edge_residual_capacity_t, long,
 property < edge_reverse_t, Traits::edge_descriptor > > > > Graph;
 typedef Traits::vertex_descriptor Vertex;
+typedef Traits::edge_descriptor Edge;
 
 struct Dinic {
     const long long flow_inf = 1e18;

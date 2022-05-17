@@ -12,12 +12,18 @@
 
 class learning_augmented_add_edges: public algorithm {
 public:
-    learning_augmented_add_edges(Graph &g, Vertex s, Vertex t, std::vector<std::pair<std::pair<int, int>, long > > precomputed_flows);
+    learning_augmented_add_edges(
+        Graph &g,
+        Vertex s,
+        Vertex t,
+        std::vector<std::pair<std::pair<int, int>, long > > precomputed_flows
+    );
     long long find_flow() override;
 private:
     Graph *g;
     Vertex s;
     Vertex t;
+    std::vector<Graph::edge_iterator> iters;
     template<typename Mapping>
     bool bfs(Graph &g, Vertex s, Vertex t,
              vector_property_map<Vertex, Mapping> &pr,

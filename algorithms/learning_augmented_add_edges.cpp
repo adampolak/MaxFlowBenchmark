@@ -9,7 +9,12 @@
 #include <chrono>
 #include <iomanip>
 
-learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, Vertex t, std::vector<std::pair<std::pair<int, int>, long > > precomputed_flows ) {
+learning_augmented_add_edges::learning_augmented_add_edges(
+    Graph &g,
+    Vertex s,
+    Vertex t,
+    std::vector<std::pair<std::pair<int, int>, long > > precomputed_flows
+    ) {
     this->name = "learning_augmented_add_edges";
     this->g = &g;
     this->s = s;
@@ -23,13 +28,14 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
     property_map<Graph, edge_residual_capacity_t>::type res_cap = get(edge_residual_capacity, g);
     property_map<Graph, edge_reverse_t>::type rev_edge = get(edge_reverse, g);
 
-    auto edges = boost::edges(g);
 
+    auto edges = boost::edges(g);
     std::cout << "constructing graph" << std::endl;
     for (auto it = edges.first; it != edges.second; it++) {
         Traits::vertex_descriptor u, v;
         if (cap[rev_edge[*it]] > cap[*it])
             continue;
+        iters.push_back(it);
         u = source(*it, g);
         v = target(*it, g);
         auto frst_flow = prec_flows[{u, v}].begin();
@@ -43,7 +49,6 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
 }
 
 long long learning_augmented_add_edges::find_flow() {
-    assert_network_flow(*g);
     auto start_time = std::chrono::steady_clock::now();
     long long cur_flow = 0;
 
@@ -51,30 +56,26 @@ long long learning_augmented_add_edges::find_flow() {
     property_map<Graph, edge_residual_capacity_t>::type res_cap = get(edge_residual_capacity, *g);
     property_map<Graph, edge_reverse_t>::type rev_edge = get(edge_reverse, *g);
 
-    auto edges = boost::edges(*g);
 
-    auto indexMap = get(vertex_index, *g);
-    auto prMap = make_vector_property_map<Vertex>(indexMap);
     std::vector<std::pair< std::pair<Vertex, Vertex>, long >  > badEdges;
     long long redundant_flow = 0;
-    for (auto it = edges.first; it != edges.second; it++) {
+    for (const auto& it : iters) {
         Traits::vertex_descriptor u, v;
         u = source(*it, *g);
         v = target(*it, *g);
         if (res_cap[*it] < 0) {
-            if (cap[*it] == 0) {
-                std::cerr << u << ' ' << v << std::endl;
-                std::cerr << cap[*it] << ' ' << cap[rev_edge[*it]] << std::endl;
-                std::cerr << res_cap[*it] << ' ' << res_cap[rev_edge[*it]] << std::endl;
-                exit(1);
-            }
             badEdges.push_back({{u, v}, -res_cap[*it]});
             redundant_flow -= res_cap[*it];
             res_cap[*it] = 0;
             res_cap[rev_edge[*it]] = cap[*it];
         }
+        if (u == s)
+            cur_flow += cap[*it]-res_cap[*it];
+        if (v == s)
+            cur_flow += cap[rev_edge[*it]]-res_cap[rev_edge[*it]];
+        cap[*it] = res_cap[*it];
+        cap[rev_edge[*it]] = res_cap[rev_edge[*it]];
     }
-    assert_network_flow(*g);
     for (auto it = badEdges.begin(); it != badEdges.end(); it++) {
         Vertex u, v;
         std::tie(u, v) = it->first;
@@ -84,24 +85,41 @@ long long learning_augmented_add_edges::find_flow() {
             bool n1, n2;
             std::tie(e1, n1) = add_edge(s, v, *g);
             std::tie(e2, n2) = add_edge(v, s, *g);
+            /*
             cap[e1] = decrease;
             cap[e2] = 0;
             res_cap[e1] = 0; // flow = decrease - 0 = decrease ,   -flow = 0 - X = -X
             res_cap[e2] = decrease;
+            */
             rev_edge[e1] = e2;
             rev_edge[e2] = e1;
+
+            cur_flow += decrease;
+            if (v == s)
+                cur_flow -= decrease;
+
+            cap[e1] = 0;
+            cap[e2] = decrease;
         }
         {
             Traits::edge_descriptor e1, e2;
             bool n1, n2;
             std::tie(e1, n1) = add_edge(u, t, *g);
             std::tie(e2, n2) = add_edge(t, u, *g);
+            /*
             cap[e1] = decrease;
             cap[e2] = 0;
             res_cap[e1] = 0;
             res_cap[e2] = decrease;
+            */
+            if (u == s)
+                cur_flow += decrease;
             rev_edge[e1] = e2;
             rev_edge[e2] = e1;
+
+            cap[e1] = 0;
+            cap[e2] = decrease;
+
         }
         {
             Traits::edge_descriptor e1, e2;
@@ -126,18 +144,16 @@ long long learning_augmented_add_edges::find_flow() {
             rev_edge[e2] = e1;
         }
     }
-    assert_network_flow(*g);
-    edges = boost::edges(*g);
 
 
-    for (auto it = edges.first; it != edges.second; it++) {
-        Traits::vertex_descriptor u, v;
-        u = source(*it, *g);
-        v = target(*it, *g);
-        if (u == s)
-            cur_flow += cap[*it]-res_cap[*it];
-        cap[*it] = res_cap[*it];
-    }
+//    for (auto it = edges.first; it != edges.second; it++) {
+//        Traits::vertex_descriptor u, v;
+//        u = source(*it, *g);
+//        v = target(*it, *g);
+//        if (u == s)
+//            cur_flow += cap[*it]-res_cap[*it];
+//        cap[*it] = res_cap[*it];
+//    }
     auto time = std::chrono::steady_clock::now() - start_time;
     double seconds_elapsed = (double)std::chrono::duration_cast<std::chrono::milliseconds>(time).count() / 1000.0;
 

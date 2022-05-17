@@ -85,11 +85,11 @@ void algos(std::string graph_filename, std::string preprocessed_flows_filename) 
     }
 
     algorithm* arr[ALGOS_COUNT] = {
-            new boykov_kolmogorov(g[0], s, t),
-            new push_relabel(g[1], s, t),
-            new dinic_algo(g[2], s, t),
-            new learning_augmented_add_edges(g[3], s, t, vec),
-            //new learning_augmented_paths_removal(g[3], s, t, vec)
+        new boykov_kolmogorov(g[0], s, t),
+        new push_relabel(g[1], s, t),
+        new dinic_algo(g[2], s, t),
+        new learning_augmented_add_edges(g[3], s, t, vec),
+        //new learning_augmented_paths_removal(g[3], s, t, vec)
     };
 
     long flows_returned[ALGOS_COUNT];
