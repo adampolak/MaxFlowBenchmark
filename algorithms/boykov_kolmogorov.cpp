@@ -14,6 +14,5 @@ boykov_kolmogorov::boykov_kolmogorov(Graph& g, Vertex s, Vertex t) {
 }
 
 long long boykov_kolmogorov::find_flow() {
-    std::cout << num_vertices(*g) << ' ' << num_edges(*g) << std::endl;
     return boykov_kolmogorov_max_flow(*g, s, t);
 }

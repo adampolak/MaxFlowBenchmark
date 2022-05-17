@@ -114,6 +114,7 @@ struct Dinic {
 
 class algorithm {
 public:
+    double time_preprocess;
     virtual long long find_flow() = 0;
     void assert_network_flow(Graph& g) {
         auto edges = boost::edges(g);
@@ -128,6 +129,8 @@ public:
             v = target(*it, g);
             if (cap[*it]-res_cap[*it] != - ( cap[rev_edge[*it]] - res_cap[rev_edge[*it]] )) {
                 std::cerr << "BAD FLOW " << u << ' ' << v << std::endl;
+                std::cerr << "CAPS " << cap[*it] << ' ' << cap[rev_edge[*it]] << std::endl;
+                std::cerr << "RES_CAPS " << res_cap[*it] << ' ' << res_cap[rev_edge[*it]] << std::endl;
                 exit(1);
             }
         }

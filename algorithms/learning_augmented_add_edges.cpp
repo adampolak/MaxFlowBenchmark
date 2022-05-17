@@ -156,7 +156,7 @@ long long learning_augmented_add_edges::find_flow() {
 //    }
     auto time = std::chrono::steady_clock::now() - start_time;
     double seconds_elapsed = (double)std::chrono::duration_cast<std::chrono::milliseconds>(time).count() / 1000.0;
-
+    this->time_preprocess = seconds_elapsed;
     std::cout << "time elapsed during preparation: " << std::setprecision(3) << std::fixed << seconds_elapsed << std::endl;
     std::cout << std::endl;
 
