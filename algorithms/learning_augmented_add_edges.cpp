@@ -15,9 +15,9 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
     this->s = s;
     this->t = t;
 
-    std::map<std::pair<int, int>, long> prec_flows;
+    std::map<std::pair<int, int>, std::set<long> > prec_flows;
     for (int i = 0; i < precomputed_flows.size(); i++)
-        prec_flows[precomputed_flows[i].first] = precomputed_flows[i].second;
+        prec_flows[precomputed_flows[i].first].insert(precomputed_flows[i].second);
 
     property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, g);
     property_map<Graph, edge_residual_capacity_t>::type res_cap = get(edge_residual_capacity, g);
@@ -28,12 +28,15 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
     std::cout << "constructing graph" << std::endl;
     for (auto it = edges.first; it != edges.second; it++) {
         Traits::vertex_descriptor u, v;
-        if (cap[*it] == 0)
+        if (cap[rev_edge[*it]] > cap[*it])
             continue;
         u = source(*it, g);
         v = target(*it, g);
-        int precflow = prec_flows[{u, v}];
+        auto frst_flow = prec_flows[{u, v}].begin();
+        int precflow = *frst_flow;
+        prec_flows[{u, v}].erase(frst_flow);
         res_cap[*it] = cap[*it] - precflow;
+        res_cap[rev_edge[*it]] = precflow;
     }
     std::cout << "finished constructing" << std::endl;
 }
@@ -60,6 +63,7 @@ long long learning_augmented_add_edges::find_flow() {
             badEdges.push_back({{u, v}, -res_cap[*it]});
             redundant_flow -= res_cap[*it];
             res_cap[*it] = 0;
+            res_cap[rev_edge[*it]] = cap[*it];
         }
     }
     for (auto it = badEdges.begin(); it != badEdges.end(); it++) {
@@ -114,11 +118,6 @@ long long learning_augmented_add_edges::find_flow() {
         }
     }
     edges = boost::edges(*g);
-    for (auto it = edges.first; it != edges.second; it++) {
-        if (cap[*it] > 0) {
-            //res_cap[rev_edge[*it]] = cap[*it] - res_cap[*it];
-        }
-    }
 
 
     for (auto it = edges.first; it != edges.second; it++) {

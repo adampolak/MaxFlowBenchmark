@@ -51,13 +51,17 @@ void learning::start(
     std::default_random_engine generator;
 
     int edge_i = 0;
+    std::vector<long> orig_cap;
+    for (auto edge = edges.first; edge != edges.second; edge++) {
+        orig_cap.push_back(main_cap[*edge]);
+    }
     for (int i = 0; i < samples; i++) {
-        rand_gen.randomize_capacities(g, generator);
+        rand_gen.randomize_capacities(g, orig_cap, generator);
         boykov_kolmogorov_max_flow(g, s, t);
         edge_i = 0;
         for (auto edge = edges.first; edge != edges.second; edge++, edge_i++) {
-            if (main_cap[*edge] == 0) continue;
-            storage[edge_i].push_back(main_res_cap[*edge]);
+            if (main_cap[*edge] != 0)
+                storage[edge_i].push_back(main_cap[*edge]);
         }
         if (i % subsample == 0) {
             std::cerr << i + 1 << "/" << samples << " samples processed\r";
@@ -117,9 +121,11 @@ void learning::print_learned_edges(
     std::map<std::pair<int, int>, int> mp;
 
     for (lemon::ListDigraph::ArcIt a(g); a != lemon::INVALID; ++a) {
-        if (mp_vertices[g.source(a)] == t && mp_vertices[g.target(a)] == s && cap[a] == 1e9)
+        int u = mp_vertices[g.source(a)], v = mp_vertices[g.target(a)];
+        std::cerr << "final edge " << u << ' ' << v << ' ' << flowMap[a] << std::endl;
+        if (u == t && v == s && cap[a] == 1e9)
             continue;
-        mp[{mp_vertices[g.source(a)], mp_vertices[g.target(a)]}] += flowMap[a];
+        mp[{u, v}] += flowMap[a];
     }
     for (auto it = mp.begin(); it != mp.end(); it++)
         std::cout << it->first.first+1 << ' ' << it->first.second+1 << ' ' << it->second << std::endl;
@@ -134,11 +140,13 @@ void learning::add_edge(
         lemon::ListDigraph::ArcMap<long> &wght
         ) {
     int samples = (int)computed_flows.size();
+    std::cerr << "vec " << computed_flows[0] << std::endl;
     for (int i = 0; i <= samples; i++) {
         Traits::edge_descriptor e1, e2;
         lemon::ListDigraph::Arc e = g.addArc(u, v);
         cap[e] = (i == samples ? 1e9 : computed_flows[i]) - (i == 0 ? 0 : computed_flows[i-1]);
         int cur_weight = (samples - i) - i;
-        wght[e] = cur_weight;
+        wght[e] = -cur_weight;
+        std::cerr << "nedge " << cap[e] << ' ' << wght[e] << std::endl;
     }
 }

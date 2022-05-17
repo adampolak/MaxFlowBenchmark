@@ -11,10 +11,9 @@
 class random_util {
 public:
     random_util(double X);
-    void randomize_capacities(MinCostGraph &g, std::default_random_engine &generator);
+    void randomize_capacities(MinCostGraph &g, std::vector<long>& orig_cap, std::default_random_engine &generator);
 private:
-    long max_cap;
-    long X;
+    double X;
 };
 
 

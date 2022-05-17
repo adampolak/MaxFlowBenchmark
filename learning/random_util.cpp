@@ -4,22 +4,22 @@
 
 #include "random_util.h"
 
-random_util::random_util(double X): max_cap(max_cap), X(X) {};
+random_util::random_util(double X): X(X) {};
 
-void random_util::randomize_capacities(MinCostGraph &g, std::default_random_engine &generator) {
+void random_util::randomize_capacities(MinCostGraph &g, std::vector<long>& orig_cap, std::default_random_engine &generator) {
 
     property_map<MinCostGraph, edge_residual_capacity_t>::type res_cap = get(edge_residual_capacity, g);
     property_map<MinCostGraph, edge_capacity_t>::type cap = get(edge_capacity, g);
     auto edges = boost::edges(g);
 
 
-
-    for (auto edge = edges.first; edge != edges.second; edge++) {
-        if (cap[*edge] == 0)
+    int edge_i = 0;
+    for (auto edge = edges.first; edge != edges.second; edge++, edge_i++) {
+        if (orig_cap[edge_i] == 0)
             continue;
-        std::normal_distribution<double> distribution(cap[*edge], double(cap[*edge])*X);
+        std::normal_distribution<double> distribution(orig_cap[edge_i], double(orig_cap[edge_i])*X);
         long gen_cap = std::max(long(distribution(generator)), 1l);
-        gen_cap = std::min(gen_cap, max_cap);
+        std::cerr << "gen " << orig_cap[edge_i] << ' ' << gen_cap << ' ' << X << std::endl;
         cap[*edge] = res_cap[*edge] = gen_cap;
     }
 }
