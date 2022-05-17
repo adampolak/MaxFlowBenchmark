@@ -114,6 +114,23 @@ struct Dinic {
 class algorithm {
 public:
     virtual long long find_flow() = 0;
+    void assert_network_flow(Graph& g) {
+        auto edges = boost::edges(g);
+        property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, g);
+        property_map<Graph, edge_residual_capacity_t>::type res_cap = get(edge_residual_capacity, g);
+        property_map<Graph, edge_reverse_t>::type rev_edge = get(edge_reverse, g);
+
+
+        for (auto it = edges.first; it != edges.second; it++) {
+            Traits::vertex_descriptor u, v;
+            u = source(*it, g);
+            v = target(*it, g);
+            if (cap[*it]-res_cap[*it] != - ( cap[rev_edge[*it]] - res_cap[rev_edge[*it]] )) {
+                std::cerr << "BAD FLOW " << u << ' ' << v << std::endl;
+                exit(1);
+            }
+        }
+    }
     std::string name;
 };
 

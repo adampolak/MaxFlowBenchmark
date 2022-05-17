@@ -15,7 +15,7 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
     this->s = s;
     this->t = t;
 
-    std::map<std::pair<int, int>, std::set<long> > prec_flows;
+    std::map<std::pair<int, int>, std::multiset<long> > prec_flows;
     for (int i = 0; i < precomputed_flows.size(); i++)
         prec_flows[precomputed_flows[i].first].insert(precomputed_flows[i].second);
 
@@ -36,12 +36,14 @@ learning_augmented_add_edges::learning_augmented_add_edges(Graph &g, Vertex s, V
         int precflow = *frst_flow;
         prec_flows[{u, v}].erase(frst_flow);
         res_cap[*it] = cap[*it] - precflow;
+        assert(cap[rev_edge[*it]] == 0);
         res_cap[rev_edge[*it]] = precflow;
     }
     std::cout << "finished constructing" << std::endl;
 }
 
 long long learning_augmented_add_edges::find_flow() {
+    assert_network_flow(*g);
     auto start_time = std::chrono::steady_clock::now();
     long long cur_flow = 0;
 
@@ -60,12 +62,19 @@ long long learning_augmented_add_edges::find_flow() {
         u = source(*it, *g);
         v = target(*it, *g);
         if (res_cap[*it] < 0) {
+            if (cap[*it] == 0) {
+                std::cerr << u << ' ' << v << std::endl;
+                std::cerr << cap[*it] << ' ' << cap[rev_edge[*it]] << std::endl;
+                std::cerr << res_cap[*it] << ' ' << res_cap[rev_edge[*it]] << std::endl;
+                exit(1);
+            }
             badEdges.push_back({{u, v}, -res_cap[*it]});
             redundant_flow -= res_cap[*it];
             res_cap[*it] = 0;
             res_cap[rev_edge[*it]] = cap[*it];
         }
     }
+    assert_network_flow(*g);
     for (auto it = badEdges.begin(); it != badEdges.end(); it++) {
         Vertex u, v;
         std::tie(u, v) = it->first;
@@ -117,6 +126,7 @@ long long learning_augmented_add_edges::find_flow() {
             rev_edge[e2] = e1;
         }
     }
+    assert_network_flow(*g);
     edges = boost::edges(*g);
 
 

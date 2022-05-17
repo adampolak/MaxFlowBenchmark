@@ -142,7 +142,7 @@ void learning::add_edge(
     for (int i = 0; i <= samples; i++) {
         Traits::edge_descriptor e1, e2;
         lemon::ListDigraph::Arc e = g.addArc(u, v);
-        cap[e] = (i == samples ? 1e9 : computed_flows[i]) - (i == 0 ? 0 : computed_flows[i-1]);
+        cap[e] = (i == samples ? 1e7 : computed_flows[i]) - (i == 0 ? 0 : computed_flows[i-1]);
         int cur_weight = (samples - i) - i;
         wght[e] = -cur_weight;
     }
