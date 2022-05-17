@@ -19,7 +19,6 @@ void random_util::randomize_capacities(MinCostGraph &g, std::vector<long>& orig_
             continue;
         std::normal_distribution<double> distribution(orig_cap[edge_i], double(orig_cap[edge_i])*X);
         long gen_cap = std::max(long(distribution(generator)), 1l);
-        std::cerr << "gen " << orig_cap[edge_i] << ' ' << gen_cap << ' ' << X << std::endl;
         cap[*edge] = res_cap[*edge] = gen_cap;
     }
 }
