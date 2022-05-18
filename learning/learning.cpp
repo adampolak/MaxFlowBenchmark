@@ -61,7 +61,7 @@ void learning::start(
         edge_i = 0;
         for (auto edge = edges.first; edge != edges.second; edge++, edge_i++) {
             if (main_cap[*edge] != 0)
-                storage[edge_i].push_back(main_cap[*edge]);
+                storage[edge_i].push_back(main_cap[*edge]-main_res_cap[*edge]);
         }
         if (i % subsample == 0) {
             std::cerr << i + 1 << "/" << samples << " samples processed\r";

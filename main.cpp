@@ -17,7 +17,7 @@
 /**
  *    usage:
  *    1. run algorithms benchmark:
- *       algo graph_filename preprocessed_flows_filename results_file test_samples_number
+ *       algo graph_filename preprocessed_flows_filename results_file test_samples_number X
  *
  *    2. run learning
  *       learn graph_filename n_samples X
@@ -45,7 +45,13 @@ void learn(std::string graph_filename, int n_samples, double X) {
     learn.start(g, s, t, n_samples, X);
 }
 
-void algos(const std::string& graph_filename, const std::string& preprocessed_flows_filename, const std::string& results_file, int test_samples) {
+void algos(
+    const std::string& graph_filename,
+    const std::string& preprocessed_flows_filename,
+    const std::string& results_file,
+    int test_samples,
+    double X
+    ) {
 
 
     std::ofstream output_result(results_file);
@@ -53,9 +59,7 @@ void algos(const std::string& graph_filename, const std::string& preprocessed_fl
     output_result << "boy_kol, push_rel, edges, paths, edges_prep, paths_prep" << std::endl;
 
 
-
-
-    random_util rand_gen(1.0/8.0);
+    random_util rand_gen(X);
 
     std::default_random_engine generator;
 
@@ -173,6 +177,7 @@ int main(int argc, char* argv[]) {
     if (type == "learn") {
         if (argc < 5) {
             std::cerr << "incorrect args!";
+            return 1;
         }
         std::string graph_filename = argv[2];
         int n_samples = atoi(argv[3]);
@@ -184,14 +189,18 @@ int main(int argc, char* argv[]) {
     }
 
     if (type == "algo") {
-        if (argc < 6) {
+        if (argc < 7) {
             std::cerr << "incorrect args!";
+            return 1;
         }
         std::string graph_filename = argv[2];
         std::string preprocessed_flows_filename = argv[3];
         std::string results_file = argv[4];
         int test_samples = atoi(argv[5]);
-        algos(graph_filename, preprocessed_flows_filename, results_file, test_samples);
+        std::stringstream strIn(argv[6]);
+        double X;
+        strIn >> X;
+        algos(graph_filename, preprocessed_flows_filename, results_file, test_samples, X);
         return 0;
     }
 
