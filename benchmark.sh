@@ -15,7 +15,7 @@ for i in "${arr[@]}"
 do
   echo ${GRAPH_FILE} "$i"
   ${PROGRAM_FILE} "learn" ${GRAPH_FILE} ${NUM_TRAIN_SAMPLES} $i > "learnedsynth.txt"
-  ${PROGRAM_FILE} "algo" ${GRAPH_FILE} "learnedsynth.txt" res_${ADD_TO_RES_FILENAME}_$i.csv ${NUM_TEST_SAMPLES} $i
+  ${PROGRAM_FILE} "algo" ${GRAPH_FILE} "learnedsynth.txt" results/res_${ADD_TO_RES_FILENAME}_$i.csv ${NUM_TEST_SAMPLES} $i
 done
 
 
