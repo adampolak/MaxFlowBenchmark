@@ -198,6 +198,12 @@ long long learning_augmented_paths_removal::find_flow() {
                 std::cerr << "SOMETHING IS WRONG" << std::endl;
                 exit(0);
             }
+            auto cur_time_elapsed = std::chrono::steady_clock::now()-start_time;
+            double cur_seconds_elapsed = (double)std::chrono::duration_cast<std::chrono::milliseconds>(cur_time_elapsed).count() / 1000.0;
+            if (cur_seconds_elapsed > 120) {
+                this->time_preprocess = 1000;
+                return 0;
+            }
         }
     }
 
