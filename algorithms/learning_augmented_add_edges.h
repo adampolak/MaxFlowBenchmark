@@ -16,7 +16,7 @@ public:
         Graph &g,
         Vertex s,
         Vertex t,
-        std::vector<std::pair<std::pair<int, int>, long > > precomputed_flows
+        std::vector<std::pair<std::pair<int, int>, long long> > precomputed_flows
     );
     long long find_flow() override;
 private:

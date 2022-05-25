@@ -11,8 +11,8 @@
 #include "algorithms/learning_augmented_add_edges.h"
 #include "algorithms/learning_augmented_paths_removal.h"
 #include "learning/learning.h"
-#include "algorithms/dinic_algo.h"
 #include "learning/random_util.h"
+#include <algos.h>
 
 /**
  *    usage:
@@ -27,6 +27,7 @@
 const int ALGOS_COUNT = 4;
 
 void learn(std::string graph_filename, int n_samples, double X) {
+    std::cerr << "X_TRAIN: " << X << std::endl;
     std::ifstream input_graph(graph_filename);
     if (!input_graph) {
         std::cerr << "cannot open file: " << graph_filename << std::endl;
@@ -45,14 +46,13 @@ void learn(std::string graph_filename, int n_samples, double X) {
     learn.start(g, s, t, n_samples, X);
 }
 
-void algos(
+void algos_(
     const std::string& graph_filename,
     const std::string& preprocessed_flows_filename,
     const std::string& results_file,
     int test_samples,
     double X
     ) {
-
 
     std::ofstream output_result(results_file);
 
@@ -94,21 +94,22 @@ void algos(
         std::ifstream input_preprocessed_flows(preprocessed_flows_filename);
         int num_ver = num_vertices(g[0]);
         int num_edge = num_edges(g[0])/2;
-        std::vector<std::pair<std::pair<int, int>, long> > vec;
+        std::vector<std::pair<std::pair<int, int>, long long> > vec;
         if (input_preprocessed_flows) {
             for (int i = 0; i < num_edge; i++) {
-                int a, b, c;
+                int a, b;
+                long long c;
                 input_preprocessed_flows >> a >> b >> c;
                 vec.push_back({{a-1, b-1}, c});
             }
         }
 
 
-        long flows_returned[ALGOS_COUNT];
-        std::set<long> flows_returned_set;
+        long long flows_returned[ALGOS_COUNT];
+        std::set<long long> flows_returned_set;
 
         auto edges = boost::edges(g[0]);
-        std::vector<long> orig_cap;
+        std::vector<long long> orig_cap;
         for (auto edge = edges.first; edge != edges.second; edge++) {
             orig_cap.push_back(capacity[*edge]);
         }
@@ -200,7 +201,9 @@ int main(int argc, char* argv[]) {
         std::stringstream strIn(argv[6]);
         double X;
         strIn >> X;
-        algos(graph_filename, preprocessed_flows_filename, results_file, test_samples, X);
+        algos alg;
+        alg.run(graph_filename, preprocessed_flows_filename, results_file, test_samples, X);
+        //algos(graph_filename, preprocessed_flows_filename, results_file, test_samples, X);
         return 0;
     }
 

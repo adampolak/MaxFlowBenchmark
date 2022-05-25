@@ -9,7 +9,7 @@
 
 class learning_augmented_paths_removal: public algorithm {
 public:
-    learning_augmented_paths_removal(Graph &g, Vertex s, Vertex t, std::vector<std::pair<std::pair<int, int>, long > > precomputed_flows);
+    learning_augmented_paths_removal(Graph &g, Vertex s, Vertex t, std::vector<std::pair<std::pair<int, int>, long long > > precomputed_flows);
     long long find_flow() override;
 private:
     Graph *g;

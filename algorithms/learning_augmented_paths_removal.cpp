@@ -11,12 +11,12 @@
 #include <iomanip>
 
 learning_augmented_paths_removal::learning_augmented_paths_removal(Graph &g, Vertex s, Vertex t,
-                                                                   std::vector<std::pair<std::pair<int, int>, long>> precomputed_flows) {
+                                                                   std::vector<std::pair<std::pair<int, int>, long long>> precomputed_flows) {
     this->name = "learning_augmented_paths_removal";
     this->g = &g;
     this->s = s;
     this->t = t;
-    std::map<std::pair<int, int>, std::multiset<long> > prec_flows;
+    std::map<std::pair<int, int>, std::multiset<long long> > prec_flows;
     for (int i = 0; i < precomputed_flows.size(); i++)
         prec_flows[precomputed_flows[i].first].insert(precomputed_flows[i].second);
 
@@ -181,7 +181,7 @@ long long learning_augmented_paths_removal::find_flow() {
 
     auto edges = boost::edges(*g);
 
-    std::vector<std::pair< std::pair<Vertex, Vertex>, long >  > badEdges;
+    std::vector<std::pair< std::pair<Vertex, Vertex>, long long >  > badEdges;
     for (auto it = edges.first; it != edges.second; it++) {
         while (res_cap[*it] < 0) {
             Traits::vertex_descriptor u, v;
@@ -226,7 +226,7 @@ long long learning_augmented_paths_removal::find_flow() {
     std::cout << std::endl;
     auto start_time_flow = std::chrono::steady_clock::now();
 
-    long get_flow = boykov_kolmogorov_max_flow(*g, s, t) + cur_flow;
+    long long get_flow = boykov_kolmogorov_max_flow(*g, s, t) + cur_flow;
     auto time_flow = std::chrono::steady_clock::now() - start_time_flow;
     double seconds_elapsed_flow = (double)std::chrono::duration_cast<std::chrono::milliseconds>(time_flow).count() / 1000.0;
 

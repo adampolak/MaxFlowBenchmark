@@ -1,4 +1,4 @@
-with open('bone.n6c10/bone_subxyz_subxy.n6c10.max') as f:
+with open('BVZ-tsukuba/BVZ-tsukuba0.max') as f:
     dct = {}
     S = 0
     T = 0

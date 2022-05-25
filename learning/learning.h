@@ -13,15 +13,15 @@ using namespace boost;
 typedef adjacency_list_traits < vecS, vecS, directedS > Traits;
 typedef adjacency_list < vecS, vecS, directedS,
 property < vertex_name_t, std::string,
-        property < vertex_index_t, long,
+        property < vertex_index_t, long long,
         property < vertex_color_t, boost::default_color_type,
-        property < vertex_distance_t, long,
+        property < vertex_distance_t, long long,
         property < vertex_predecessor_t, Traits::edge_descriptor > > > > >,
 
-property < edge_capacity_t, long,
-        property < edge_residual_capacity_t, long,
+property < edge_capacity_t, long long,
+        property < edge_residual_capacity_t, long long,
                 property < edge_reverse_t, Traits::edge_descriptor,
-                        property< edge_weight_t, long > > > > > MinCostGraph;
+                        property< edge_weight_t, long long > > > > > MinCostGraph;
 typedef Traits::vertex_descriptor Vertex;
 
 class learning {
@@ -39,15 +39,15 @@ private:
             lemon::ListDigraph &g,
             lemon::ListDigraph::Node u,
             lemon::ListDigraph::Node v,
-            std::vector<long> &computed_flows,
-            lemon::ListDigraph::ArcMap<long> &cap,
-            lemon::ListDigraph::ArcMap<long> &wght
+            std::vector<long long> &computed_flows,
+            lemon::ListDigraph::ArcMap<long long> &cap,
+            lemon::ListDigraph::ArcMap<long long> &wght
             );
     void print_learned_edges(
             lemon::ListDigraph &g,
             lemon::CostScaling<lemon::ListDigraph> &cs,
             std::map<lemon::ListDigraph::Node, int> &mp_vertices,
-            lemon::ListDigraph::ArcMap<long> &cap
+            lemon::ListDigraph::ArcMap<long long> &cap
         );
 };
 

@@ -31,8 +31,8 @@ void learning::start(
     //MinCostGraph to_learn(num_vertices(g));
     property_map<MinCostGraph, edge_residual_capacity_t>::type main_res_cap = get(edge_residual_capacity, g);
     property_map<MinCostGraph, edge_capacity_t>::type main_cap = get(edge_capacity, g);
-    lemon::ListDigraph::ArcMap<long> cap(to_learn_lemon);
-    lemon::ListDigraph::ArcMap<long> wght(to_learn_lemon);
+    lemon::ListDigraph::ArcMap<long long> cap(to_learn_lemon);
+    lemon::ListDigraph::ArcMap<long long> wght(to_learn_lemon);
     //property_map<MinCostGraph, edge_residual_capacity_t>::type learn_res_cap = get(edge_residual_capacity, to_learn);
     //property_map<MinCostGraph, edge_reverse_t>::type rev_edge = get(edge_reverse, to_learn);
     //property_map<MinCostGraph, edge_weight_t>::type wght = get(edge_weight, to_learn);
@@ -42,7 +42,7 @@ void learning::start(
 
     int n_edges = num_edges(g);
 
-    std::vector<std::vector<long> > storage(n_edges);
+    std::vector<std::vector<long long> > storage(n_edges);
 
     std::cerr << "n_edges: " << num_edges(g) << std::endl;
 
@@ -51,7 +51,7 @@ void learning::start(
     std::default_random_engine generator;
 
     int edge_i = 0;
-    std::vector<long> orig_cap;
+    std::vector<long long> orig_cap;
     for (auto edge = edges.first; edge != edges.second; edge++) {
         orig_cap.push_back(main_cap[*edge]);
     }
@@ -78,7 +78,7 @@ void learning::start(
         Traits::vertex_descriptor u, v;
         u = source(*edge, g);
         v = target(*edge, g);
-        std::vector<long> vec(storage[edge_i]);
+        std::vector<long long> vec(storage[edge_i]);
         sort(vec.begin(), vec.end());
         add_edge(to_learn_lemon, nodes_lemon[u], nodes_lemon[v], vec, cap, wght);
 
@@ -112,13 +112,13 @@ void learning::print_learned_edges(
         lemon::ListDigraph &g,
         lemon::CostScaling<lemon::ListDigraph> &cs,
         std::map<lemon::ListDigraph::Node, int> &mp_vertices,
-        lemon::ListDigraph::ArcMap<long> &cap
+        lemon::ListDigraph::ArcMap<long long> &cap
     ) {
 
-    lemon::ListDigraph::ArcMap<long> flowMap(g);
+    lemon::ListDigraph::ArcMap<long long> flowMap(g);
     cs.flowMap(flowMap);
 
-    std::map<std::pair<int, int>, int> mp;
+    std::map<std::pair<int, int>, long long> mp;
 
     for (lemon::ListDigraph::ArcIt a(g); a != lemon::INVALID; ++a) {
         int u = mp_vertices[g.source(a)], v = mp_vertices[g.target(a)];
@@ -134,9 +134,9 @@ void learning::add_edge(
         lemon::ListDigraph &g,
         lemon::ListDigraph::Node u,
         lemon::ListDigraph::Node v,
-        std::vector<long> &computed_flows,
-        lemon::ListDigraph::ArcMap<long> &cap,
-        lemon::ListDigraph::ArcMap<long> &wght
+        std::vector<long long> &computed_flows,
+        lemon::ListDigraph::ArcMap<long long> &cap,
+        lemon::ListDigraph::ArcMap<long long> &wght
         ) {
     int samples = (int)computed_flows.size();
     for (int i = 0; i <= samples; i++) {

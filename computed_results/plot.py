@@ -25,10 +25,8 @@ stdes = [
 plt.rcParams["figure.autolayout"] = True
 
 def plot_mean_and_CI(mean, lb, ub, color_mean=None, color_shading=None, label_name=None, plot_name=None):
-    # plot the shaded range of the confidence intervals
     plt.fill_between(range(mean.shape[0]), ub, lb,
                      color=color_shading, alpha=.5)
-    # plot the mean on top
     plt.plot(mean, color_mean, label=label_name)
 
 for name in names:
