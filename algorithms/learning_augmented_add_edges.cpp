@@ -13,14 +13,14 @@ learning_augmented_add_edges::learning_augmented_add_edges(
     Graph &g,
     Vertex s,
     Vertex t,
-    std::vector<std::pair<std::pair<int, int>, long > > precomputed_flows
+    std::vector<std::pair<std::pair<int, int>, long long > > precomputed_flows
     ) {
     this->name = "learning_augmented_add_edges";
     this->g = &g;
     this->s = s;
     this->t = t;
 
-    std::map<std::pair<int, int>, std::multiset<long> > prec_flows;
+    std::map<std::pair<int, int>, std::multiset<long long> > prec_flows;
     for (int i = 0; i < precomputed_flows.size(); i++)
         prec_flows[precomputed_flows[i].first].insert(precomputed_flows[i].second);
 
@@ -38,11 +38,11 @@ learning_augmented_add_edges::learning_augmented_add_edges(
         iters.push_back(it);
         u = source(*it, g);
         v = target(*it, g);
-        auto frst_flow = prec_flows[{u, v}].begin();
-        int precflow = *frst_flow;
         if (prec_flows[{u, v}].empty()) {
             assert(0);
         }
+        auto frst_flow = prec_flows[{u, v}].begin();
+        int precflow = *frst_flow;
         prec_flows[{u, v}].erase(frst_flow);
         res_cap[*it] = cap[*it] - precflow;
         assert(cap[rev_edge[*it]] == 0);
@@ -60,7 +60,7 @@ long long learning_augmented_add_edges::find_flow() {
     property_map<Graph, edge_reverse_t>::type rev_edge = get(edge_reverse, *g);
 
 
-    std::vector<std::pair< std::pair<Vertex, Vertex>, long >  > badEdges;
+    std::vector<std::pair< std::pair<Vertex, Vertex>, long long>  > badEdges;
     long long redundant_flow = 0;
     for (const auto& it : iters) {
         Traits::vertex_descriptor u, v;
@@ -79,10 +79,11 @@ long long learning_augmented_add_edges::find_flow() {
         cap[*it] = res_cap[*it];
         cap[rev_edge[*it]] = res_cap[rev_edge[*it]];
     }
+    std::cerr << "LOOKED THROUGH ALL EDGES" << std::endl;
     for (auto it = badEdges.begin(); it != badEdges.end(); it++) {
         Vertex u, v;
         std::tie(u, v) = it->first;
-        long decrease = it->second;
+        long long decrease = it->second;
         {
             Traits::edge_descriptor e1, e2;
             bool n1, n2;

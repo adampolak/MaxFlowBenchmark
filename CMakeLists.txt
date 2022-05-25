@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 find_package(Boost COMPONENTS graph REQUIRED)
 
-add_executable(MaxFlowBenchmark main.cpp algorithms/algorithm.cpp algorithms/algorithm.h algorithms/boykov_kolmogorov.cpp algorithms/boykov_kolmogorov.h algorithms/push_relabel.cpp algorithms/push_relabel.h algorithms/learning_augmented_add_edges.cpp algorithms/learning_augmented_add_edges.h learning/learning.cpp learning/learning.h algorithms/learning_augmented_paths_removal.cpp algorithms/learning_augmented_paths_removal.h learning/random_util.cpp learning/random_util.h algorithms/preflow.cpp algorithms/preflow.h algos.cpp algos.h output/csv_writer.cpp output/csv_writer.h algorithms/edmonds_carp.cpp algorithms/edmonds_carp.h algorithms/learning_augmented_add_edges_lemon.cpp algorithms/learning_augmented_add_edges_lemon.h algorithms/learning_augmented_paths_removal_lemon.cpp algorithms/learning_augmented_paths_removal_lemon.h)
+add_executable(MaxFlowBenchmark main.cpp algorithms/algorithm.cpp algorithms/algorithm.h algorithms/boykov_kolmogorov.cpp algorithms/boykov_kolmogorov.h algorithms/push_relabel.cpp algorithms/push_relabel.h algorithms/learning_augmented_add_edges.cpp algorithms/learning_augmented_add_edges.h learning/learning.cpp learning/learning.h algorithms/learning_augmented_paths_removal.cpp algorithms/learning_augmented_paths_removal.h learning/random_util.cpp learning/random_util.h algorithms/preflow.cpp algorithms/preflow.h algos.cpp algos.h algorithms/edmonds_carp.cpp algorithms/edmonds_carp.h algorithms/learning_augmented_add_edges_lemon.cpp algorithms/learning_augmented_add_edges_lemon.h algorithms/learning_augmented_paths_removal_lemon.cpp algorithms/learning_augmented_paths_removal_lemon.h)
 
 target_link_libraries(MaxFlowBenchmark Boost::graph)
 
