@@ -19,6 +19,9 @@
 #include <algorithms/push_relabel.h>
 #include <algorithms/learning_augmented_add_edges.h>
 #include <algorithms/learning_augmented_paths_removal.h>
+#include <utility>
+#include <chrono>
+#include <iomanip>
 
 const int ALGOS_COUNT = 3;
 
