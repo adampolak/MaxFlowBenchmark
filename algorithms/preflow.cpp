@@ -9,6 +9,7 @@ preflow::preflow(
     Graph& g, Vertex s, Vertex t
 ) {
     this->name = "preflow";
+    this->g = &g;
     this->caps = new lemon::SmartDigraph::ArcMap<long long>(gg);
 
     property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, g);
@@ -17,7 +18,7 @@ preflow::preflow(
 
     int num_ver = num_vertices(g);
     for (int i = 0; i < num_ver; i++)
-        gg.addNode();
+        node_mapping.emplace_back(gg.addNode());
 
     auto edges = boost::edges(g);
     for (auto it = edges.first; it != edges.second; it++) {
@@ -27,18 +28,13 @@ preflow::preflow(
         u = source(*it, g);
         v = target(*it, g);
         int capp = cap[*it];
-        lemon::SmartDigraph::Node U, V;
-        U = gg.nodeFromId(u);
-        V = gg.nodeFromId(v);
-        lemon::SmartDigraph::Arc arc = gg.addArc(U, V);
-        (*caps)[arc] = capp;
     }
 
     //assert(num_edges(g) == lemon::countArcs(gg)*2);
 
     lemon::SmartDigraph::Node S, T;
-    S = gg.fromId(s, S);
-    T = gg.fromId(t, T);
+    S = node_mapping[s];
+    T = node_mapping[t];
     this->prflw = new lemon::Preflow<lemon::SmartDigraph, lemon::SmartDigraph::ArcMap<long long>> (
         gg, *caps, S, T
     );
@@ -49,12 +45,21 @@ preflow::~preflow() {
 }
 
 long long preflow::find_flow() {
-    std::cerr << "START PREFLOW" << std::endl;
-    prflw->init();
-    std::cerr << "INITED" << std::endl;
-    prflw->startFirstPhase();
-    std::cerr << "FINISHED 1 PHASE" << std::endl;
-    prflw->startSecondPhase();
-    std::cerr << "FINISHED 2 PHASE" << std::endl;
+
+    property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, *g);
+    auto edges = boost::edges(*g);
+    for (auto it = edges.first; it != edges.second; it++) {
+        Traits::vertex_descriptor u, v;
+        u = source(*it, *g);
+        v = target(*it, *g);
+        if (cap[*it] > 0) {
+            lemon::SmartDigraph::Node U, V;
+            U = node_mapping[u];;
+            V = node_mapping[v];
+            lemon::SmartDigraph::Arc arc = gg.addArc(U, V);
+            (*caps)[arc] = cap[*it];
+        }
+    }
+    prflw->run();
     return prflw->flowValue();
 }

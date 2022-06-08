@@ -2,14 +2,14 @@
 
 PROGRAM_FILE=./cmake-build-debug/MaxFlowBenchmark
 
-declare -a graph_files=("data/processed_tsukuba.txt" "data/bone_processed.max" "data/LB07-bunny-sml.max")
+declare -a graph_files=("data/LB07-bunny-sml.max")
 #declare -a graph_files=("data/synth2.txt")
-declare -a train_samples=("1" "3")
-declare -a test_samples=("1" "3" "5")
-declare -a stds=("0" "0.01" "1" "4")
-#declare -a train_samples=("1")
-#declare -a test_samples=("1")
-#declare -a stds=("0" "0.01")
+#declare -a train_samples=("1" "3")
+#declare -a test_samples=("1" "3" "5")
+#declare -a stds=("0" "0.01" "1" "4")
+declare -a train_samples=("1")
+declare -a test_samples=("3")
+declare -a stds=("0" "0.01")
 
 rm -r results
 

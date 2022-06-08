@@ -99,7 +99,6 @@ void algos::run(
             auto edges = boost::edges(g[i]);
             auto edges_zero = boost::edges(g[0]);
             auto it_zero = edges_zero.first;
-            std::ifstream input_graph(graph_filename);
             property_map<Graph, edge_capacity_t>::type
                 capacity_new = get(edge_capacity, g[i]);
             for (auto it = edges.first; it != edges.second; it++, it_zero++) {

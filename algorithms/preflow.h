@@ -22,6 +22,8 @@ private:
         lemon::SmartDigraph,
         lemon::SmartDigraph::ArcMap<long long>
     > *prflw;
+    std::vector<lemon::SmartDigraph::Node> node_mapping;
+    Graph* g;
 };
 
 
