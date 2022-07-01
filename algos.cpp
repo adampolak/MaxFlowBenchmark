@@ -4,7 +4,6 @@
 
 #include "algos.h"
 #include "algorithms/preflow.h"
-#include "algorithms/edmonds_carp.h"
 #include "algorithms/learning_augmented_add_edges_lemon.h"
 #include "algorithms/learning_augmented_paths_removal_lemon.h"
 
@@ -12,18 +11,12 @@
 #include <fstream>
 #include <random>
 #include <learning/random_util.h>
-#include <lemon/list_graph.h>
-#include <lemon/dimacs.h>
-#include <boost/graph/read_dimacs.hpp>
-#include <algorithms/boykov_kolmogorov.h>
-#include <algorithms/push_relabel.h>
-#include <algorithms/learning_augmented_add_edges.h>
-#include <algorithms/learning_augmented_paths_removal.h>
 #include <utility>
 #include <chrono>
 #include <iomanip>
+#include <lemon/dimacs.h>
 
-const int ALGOS_COUNT = 3;
+const int ALGOS_COUNT = 2;
 
 void algos::run(
     const std::string& graph_filename,
@@ -51,29 +44,28 @@ void algos::run(
             exit(1);
         }
 
-        Graph g[ALGOS_COUNT];
-        property_map<Graph, edge_capacity_t>::type
-            capacity = get(edge_capacity, g[0]);
-        property_map<Graph, edge_reverse_t>::type
-            rev = get(edge_reverse, g[0]);
+        lemon::SmartDigraph g[ALGOS_COUNT];
 
-        Traits::vertex_descriptor s, t;
-        read_dimacs_max_flow(g[0], capacity, rev, s, t, input_graph);
+
+        lemon::SmartDigraph::ArcMap<long long>* capacity[ALGOS_COUNT];
+        for (int i = 0; i < ALGOS_COUNT; i++)
+            capacity[i] = new lemon::SmartDigraph::ArcMap<long long>(g[0]);
+
+        lemon::SmartDigraph::Node s, t;
+
+
+        lemon::readDimacsMax(input_graph, g[0], *(capacity[0]), s, t);
+
         input_graph.close();
 
         for (int i = 1; i < ALGOS_COUNT; i++) {
             std::ifstream input_graph(graph_filename);
-            property_map<Graph, edge_capacity_t>::type
-                capacity = get(edge_capacity, g[i]);
-            property_map<Graph, edge_reverse_t>::type
-                rev = get(edge_reverse, g[i]);
-            read_dimacs_max_flow(g[i], capacity, rev, s, t, input_graph);
+            lemon::readDimacsMax(input_graph, g[i], *(capacity[i]), s, t);
             input_graph.close();
         }
 
         std::ifstream input_preprocessed_flows(preprocessed_flows_filename);
-        int num_ver = num_vertices(g[0]);
-        int num_edge = num_edges(g[0])/2;
+        int num_edge = g[0].arcNum();
         std::vector<std::pair<std::pair<int, int>, long long> > vec;
         if (input_preprocessed_flows) {
             for (int i = 0; i < num_edge; i++) {
@@ -87,38 +79,32 @@ void algos::run(
 
         long long flows_returned[ALGOS_COUNT];
         std::set<long long> flows_returned_set;
+        lemon::SmartDigraph::ArcIt aIt(g[0]);
 
-        auto edges = boost::edges(g[0]);
         std::vector<long long> orig_cap;
-        for (auto edge = edges.first; edge != edges.second; edge++) {
-            orig_cap.push_back(capacity[*edge]);
+        for (; aIt != lemon::INVALID; ++aIt) {
+            orig_cap.push_back((*capacity[0])[aIt]);
         }
 
-        rand_gen.randomize_capacities(g[0], orig_cap, generator);
+        rand_gen.randomize_capacities(g[0], *capacity[0], orig_cap, generator);
         for (int i = 1; i < ALGOS_COUNT; i++) {
-            auto edges = boost::edges(g[i]);
-            auto edges_zero = boost::edges(g[0]);
-            auto it_zero = edges_zero.first;
-            property_map<Graph, edge_capacity_t>::type
-                capacity_new = get(edge_capacity, g[i]);
-            for (auto it = edges.first; it != edges.second; it++, it_zero++) {
-                capacity_new[*it] = capacity[*it_zero];
+            lemon::SmartDigraph::ArcIt aIt0(g[0]);
+            lemon::SmartDigraph::ArcIt aItI(g[i]);
+            for (; aIt0 != lemon::INVALID; ++aIt0, ++aItI) {
+                (*capacity[i])[aItI] = (*capacity[0])[aIt0];
             }
         }
 
         algorithm* arr[ALGOS_COUNT] = {
-            //new boykov_kolmogorov(g[0], s, t),
-            new preflow(g[0], s, t),
-            new learning_augmented_add_edges_lemon(g[1], s, t, vec),
-            new learning_augmented_paths_removal_lemon(g[2], s, t, vec),
-            //new push_relabel(g[2], s, t),
-            //new edmonds_carp(g[3], s, t)
-            //new learning_augmented_add_edges(g[2], s, t, vec),
-            //new learning_augmented_paths_removal(g[3], s, t, vec)
+            new preflow(g[0], capacity[0], s, t),
+            new learning_augmented_add_edges_lemon(g[1], capacity[1], s, t, vec),
+            //new learning_augmented_paths_removal_lemon(g[2], s, t, vec),
         };
 
         for (int i = 0; i < ALGOS_COUNT; i++) {
             std::cout << "looking for flow with \"" << arr[i]->name << "\" algorithm" << std::endl;
+
+            arr[i]->build();
 
             auto start_time = std::chrono::steady_clock::now();
             long long found_flow = arr[i]->find_flow();

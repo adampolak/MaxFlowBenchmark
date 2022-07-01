@@ -7,34 +7,42 @@
 
 #include "algorithm.h"
 #include <lemon/preflow.h>
+#include <unordered_map>
 
 class learning_augmented_paths_removal_lemon: public algorithm {
 public:
-    learning_augmented_paths_removal_lemon(Graph &g, Vertex s, Vertex t, std::vector<std::pair<std::pair<int, int>, long long > > precomputed_flows);
+    learning_augmented_paths_removal_lemon(
+        lemon::SmartDigraph& g,
+        lemon::SmartDigraph::ArcMap<long long> *capacity,
+        lemon::SmartDigraph::Node s,
+        lemon::SmartDigraph::Node t,
+        std::vector<std::pair<std::pair<int, int>, long long>> precomputed_flows
+        );
     long long find_flow() override;
+    void build() override;
 private:
-    void add_edge(int u, int v, long long cap);
-    Graph *g;
-    Vertex s;
-    Vertex t;
-    property_map<Graph, edge_capacity_t>::type cap;
-    property_map<Graph, edge_residual_capacity_t>::type res_cap;
-    property_map<Graph, edge_reverse_t>::type rev_edge;
-    vector_property_map<Vertex, property_map<Graph, vertex_index_t>::type> pr;
-    std::vector<lemon::SmartDigraph::Node> node_mapping;
+    void add_edge(lemon::SmartDigraph::Node u, lemon::SmartDigraph::Node v, long long cap);
+    std::unordered_map<int, int> node_mapping;
 
 
     lemon::SmartDigraph gg;
-    lemon::SmartDigraph::ArcMap<long long> *caps;
+    lemon::SmartDigraph *g;
+    lemon::SmartDigraph::ArcMap<long long> *flow;
+    lemon::SmartDigraph::ArcMap<long long> *capacity;
+    lemon::SmartDigraph::ArcMap<long long> *final_caps;
     lemon::Preflow<
         lemon::SmartDigraph,
         lemon::SmartDigraph::ArcMap<long long>
     > *prflw;
+    lemon::SmartDigraph::Node s, t;
+    bool built = false;
+    long long cur_flow = 0;
+    std::unordered_map<int, int> pr;
 
-    bool bfs(Vertex s, Vertex t);
-    void dec_path(Vertex s, Vertex t);
-    bool fnd_cycle(Vertex s, Vertex t);
-    std::pair<bool, Vertex> dfs(Vertex v, Vertex u);
+    bool bfs(lemon::SmartDigraph::Node s, lemon::SmartDigraph::Node t);
+    void dec_path(lemon::SmartDigraph::Node s, lemon::SmartDigraph::Node t);
+    bool fnd_cycle(lemon::SmartDigraph::Node s, lemon::SmartDigraph::Node t);
+    std::pair<bool, lemon::SmartDigraph::Node> dfs(lemon::SmartDigraph::Node v, lemon::SmartDigraph::Node u);*/
 };
 
 

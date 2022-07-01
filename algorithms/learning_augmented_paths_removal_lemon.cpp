@@ -6,112 +6,111 @@
 #include <utility>
 #include <chrono>
 #include <iomanip>
+#include <map>
+#include <set>
 
 
 learning_augmented_paths_removal_lemon::learning_augmented_paths_removal_lemon(
-    Graph &g,
-    Vertex s,
-    Vertex t,
+    lemon::SmartDigraph& g,
+    lemon::SmartDigraph::ArcMap<long long> *capacity,
+    lemon::SmartDigraph::Node s,
+    lemon::SmartDigraph::Node t,
     std::vector<std::pair<std::pair<int, int>, long long>> precomputed_flows
 ) {
     this->name = "learning_augmented_paths_removal";
     this->g = &g;
-    this->s = s;
-    this->t = t;
-    this->caps = new lemon::SmartDigraph::ArcMap<long long>(gg);
+    this->final_caps = new lemon::SmartDigraph::ArcMap<long long>(gg);
+    this->capacity = capacity;
+    this->flow = new lemon::SmartDigraph::ArcMap<long long>(g);
 
 
-    int num_ver = num_vertices(g);
-    for (int i = 0; i < num_ver; i++)
-        node_mapping.push_back(gg.addNode());
-
-    std::map<std::pair<int, int>, std::multiset<long long> > prec_flows;
-    for (int i = 0; i < precomputed_flows.size(); i++)
-        prec_flows[precomputed_flows[i].first].insert(precomputed_flows[i].second);
-
-    cap = get(edge_capacity, g);
-    res_cap = get(edge_residual_capacity, g);
-    rev_edge = get(edge_reverse, g);
-
-    auto edges = boost::edges(g);
-
-    for (auto it = edges.first; it != edges.second; it++) {
-        Traits::vertex_descriptor u, v;
-        if (cap[*it] == 0)
-            continue;
-        u = source(*it, g);
-        v = target(*it, g);
-        auto frst_flow = prec_flows[{u, v}].begin();
-        int precflow = *frst_flow;
-        prec_flows[{u, v}].erase(frst_flow);
-        res_cap[*it] = cap[*it] - precflow;
-        assert(cap[rev_edge[*it]] == 0);
-        res_cap[rev_edge[*it]] = precflow;
+    auto nodeIt = lemon::SmartDigraph::NodeIt(g);
+    for (; nodeIt != lemon::INVALID; ++nodeIt) {
+        node_mapping[g.id(nodeIt)] = gg.id(gg.addNode());
+        int cnt = 0;
+        for (auto it = lemon::SmartDigraph::OutArcIt(g, nodeIt); it != lemon::INVALID; ++it) {
+            ++cnt;
+        }
     }
-    auto indexMap = get(vertex_index, g);
-    pr = make_vector_property_map<Vertex>(indexMap);
+    std::map<std::pair<int, int>, std::multiset<long long> > prec_flows;
+    for (int i = 0; i < precomputed_flows.size(); i++) {
+        int u, v;
+        std::tie(u, v) = precomputed_flows[i].first;
+        prec_flows[{u, v}].insert(precomputed_flows[i].second);
+    }
 
+    lemon::SmartDigraph::ArcIt aIt(g);
 
-    lemon::SmartDigraph::Node S, T;
-    S = node_mapping[s];
-    T = node_mapping[t];
+    for (; aIt != lemon::INVALID; ++aIt) {
+        lemon::SmartDigraph::Node u, v;
+        u = g.source(aIt);
+        v = g.target(aIt);
+        if (prec_flows[{g.id(u), g.id(v)}].empty()) {
+            assert(0);
+        }
+        auto frst_flow = prec_flows[{g.id(u), g.id(v)}].begin();
+        int precFlow = *frst_flow;
+        prec_flows[{g.id(u), g.id(v)}].erase(frst_flow);
+        (*flow)[aIt] = precFlow;
+    }
+
     this->prflw = new lemon::Preflow<lemon::SmartDigraph, lemon::SmartDigraph::ArcMap<long long>> (
-        gg, *caps, S, T
+        gg, *final_caps, gg.nodeFromId(node_mapping[g.id(s)]), gg.nodeFromId(node_mapping[g.id(t)])
     );
 }
 
 
 bool learning_augmented_paths_removal_lemon::bfs(
-    Vertex s,
-    Vertex t
+    lemon::SmartDigraph::Node s,
+    lemon::SmartDigraph::Node t
 ) {
-    std::queue<Vertex> q;
+    std::queue<lemon::SmartDigraph::Node> q;
 
 
-    auto vertices = boost::vertices(*g);
-    for (auto it = vertices.first; it != vertices.second; it++) {
-        pr[*it] = -1;
+    auto nodeIt = lemon::SmartDigraph::NodeIt(*g);
+    for (; nodeIt != lemon::INVALID; ++nodeIt) {
+        pr[(*g).id(nodeIt)] = -1;
     }
 
-    pr[s] = 0;
+    pr[(*g).id(nodeIt)] = 0;
     q.push(s);
     while(!q.empty()) {
-        Vertex v = q.front();
+        auto v = q.front();
         if (v == t)
             return true;
         q.pop();
-        auto out_edg = out_edges(v, *g);
-        for (auto it = out_edg.first; it != out_edg.second; it++) {
-            if (res_cap[*it] >= cap[*it] || cap[*it] == 0) continue;
-            Vertex u = target(*it, *g);
-            if (pr[u] == -1) {
-                pr[u] = v;
+        auto aIt = lemon::SmartDigraph::OutArcIt(*g, v);
+        for (; aIt != lemon::INVALID; ++aIt) {
+            if ((*flow)[aIt] <= 0 || (*capacity)[aIt] == 0) continue;
+            auto u = (*g).target(aIt);
+            if (pr[(*g).id(u)] == -1) {
+                pr[(*g).id(u)] = (*g).id(v);
                 if (u == t)
                     return true;
                 q.push(u);
             }
         }
     }
-    return pr[t] != -1;
+    return pr[(*g).id(t)] != -1;
 }
 
 void learning_augmented_paths_removal_lemon::dec_path(
-    Vertex s,
-    Vertex t
+    lemon::SmartDigraph::Node s,
+    lemon::SmartDigraph::Node t
 ) {
     if (!bfs(s, t)) {
         std::cerr << "no path" << std::endl;
         assert(0);
     }
     while(t != s) {
-        Vertex p = pr[t];
-        auto out_edg = out_edges(p, *g);
-        for (auto it = out_edg.first; it != out_edg.second; it++) {
-            Vertex u = target(*it, *g);
-            if (res_cap[*it] >= cap[*it] || cap[*it] == 0) continue;
+        auto p = (*g).nodeFromId(pr[(*g).id(t)]);
+        auto aIt = lemon::SmartDigraph::OutArcIt(*g, p);
+        for (; aIt != lemon::INVALID; ++aIt) {
+            auto u = (*g).target(aIt);
+            if ((*flow)[aIt] <= 0 || (*capacity)[aIt] == 0)
+                continue;
             if (u == t) {
-                res_cap[*it] += 1;
-                res_cap[rev_edge[*it]] -= 1;
+                (*flow)[aIt] -= 1;
                 break;
             }
         }
@@ -119,69 +118,67 @@ void learning_augmented_paths_removal_lemon::dec_path(
     }
 }
 
-std::pair<bool, Vertex> learning_augmented_paths_removal_lemon::dfs(
-    Vertex v,
-    Vertex u
+std::pair<bool, lemon::SmartDigraph::Node> learning_augmented_paths_removal_lemon::dfs(
+    lemon::SmartDigraph::Node v,
+    lemon::SmartDigraph::Node u
 ) {
-    auto out_edg = out_edges(v, *g);
-    for (auto it = out_edg.first; it != out_edg.second; it++) {
-        if (res_cap[*it] >= cap[*it] || cap[*it] == 0)
+    auto aIt = lemon::SmartDigraph::OutArcIt(*g, v);
+    for (; aIt != lemon::INVALID; ++aIt) {
+        if ((*flow)[aIt] <= 0 || (*capacity)[aIt] == 0)
             continue;
-        Vertex to = target(*it, *g);
-        if (pr[to] != -1)
+        lemon::SmartDigraph::Node to = (*g).target(aIt);
+        if (pr[(*g).id(to)] != -1)
             continue;
-        if (to == u) {
+        if (to == u)
             return {true, v};
-        }
-        pr[to] = v;
+        pr[(*g).id(to)] = (*g).id(v);
         auto cur_ans = dfs(to, u);
         if (cur_ans.first)
             return cur_ans;
     }
-    return {false, 0};
+    return {false, lemon::SmartDigraph::Node(lemon::Invalid()) };
 }
 
 bool learning_augmented_paths_removal_lemon::fnd_cycle(
-    Vertex s,
-    Vertex t
+    lemon::SmartDigraph::Node s,
+    lemon::SmartDigraph::Node t
 ) {
 
-    auto vertices = boost::vertices(*g);
-    for (auto it = vertices.first; it != vertices.second; it++) {
-        pr[*it] = -1;
+    auto nodeIt = lemon::SmartDigraph::NodeIt(*g);
+    for (; nodeIt != lemon::INVALID; ++nodeIt) {
+        pr[(*g).id(nodeIt)] = -1;
     }
+
     auto ans = dfs(t, s);
 
     if (ans.first) {
-        pr[s] = ans.second;
-        Vertex scp = s;
+        pr[(*g).id(s)] = (*g).id(ans.second);
+        lemon::SmartDigraph::Node scp = s;
         while(s != t) {
-            Vertex p = pr[s];
+            auto p = (*g).nodeFromId(pr[(*g).id(s)]);
             if (s == p) {
                 std::cerr << "NO" << std::endl;
                 exit(0);
             }
-            auto out_edg = out_edges(p, *g);
-            for (auto it = out_edg.first; it != out_edg.second; it++) {
-                if (res_cap[*it] >= cap[*it] || cap[*it] == 0)
+            auto aIt = lemon::SmartDigraph::OutArcIt(*g, p);
+            for (; aIt != lemon::INVALID; ++aIt) {
+                if ((*flow)[aIt] <= 0 || (*capacity)[aIt] == 0)
                     continue;
-                Vertex u = target(*it, *g);
+                auto u = (*g).target(aIt);
                 if (u == s) {
-                    res_cap[*it] += 1;
-                    res_cap[rev_edge[*it]] -= 1;
+                    (*flow)[aIt] -= 1;
                     break;
                 }
             }
             s = p;
         }
-        auto out_edg = out_edges(scp, *g);
-        for (auto it = out_edg.first; it != out_edg.second; it++) {
-            if (res_cap[*it] >= cap[*it] || cap[*it] == 0)
+        auto aIt = lemon::SmartDigraph::OutArcIt(*g, scp);
+        for (; aIt != lemon::INVALID; ++aIt) {
+            if ((*flow)[aIt] || (*capacity)[aIt] == 0)
                 continue;
-            Vertex u = target(*it, *g);
+            auto u = (*g).target(aIt);
             if (u == t) {
-                res_cap[*it] += 1;
-                res_cap[rev_edge[*it]] -= 1;
+                (*flow)[aIt] -= 1;
                 break;
             }
         }
@@ -192,32 +189,28 @@ bool learning_augmented_paths_removal_lemon::fnd_cycle(
 }
 
 
-void learning_augmented_paths_removal_lemon::add_edge(int u, int v, long long cap) {
+void learning_augmented_paths_removal_lemon::add_edge(lemon::SmartDigraph::Node u, lemon::SmartDigraph::Node v, long long cap) {
     lemon::SmartDigraph::Node U, V;
-    U = node_mapping[u];
-    V = node_mapping[v];
+    U = gg.nodeFromId(node_mapping[(*g).id(u)]);
+    V = gg.nodeFromId(node_mapping[(*g).id(v)]);
     lemon::SmartDigraph::Arc arc = gg.addArc(U, V);
-    (*caps)[arc] = cap;
+    (*final_caps)[arc] = cap;
 }
 
-long long learning_augmented_paths_removal_lemon::find_flow() {
+void learning_augmented_paths_removal_lemon::build() {
     auto start_time = std::chrono::steady_clock::now();
 
-
-    auto edges = boost::edges(*g);
-
-    std::vector<std::pair< std::pair<Vertex, Vertex>, long long >  > badEdges;
-    for (auto it = edges.first; it != edges.second; it++) {
-        while (res_cap[*it] < 0) {
-            Traits::vertex_descriptor u, v;
-            u = source(*it, *g);
-            v = target(*it, *g);
+    std::vector<std::pair< std::pair<lemon::SmartDigraph::Node , lemon::SmartDigraph::Node>, long long >  > badEdges;
+    auto aIt = lemon::SmartDigraph::ArcIt(*g);
+    for (; aIt != lemon::INVALID; ++aIt) {
+        while ((*flow)[aIt] > (*capacity)[aIt]) {
+            auto u = (*g).source(aIt);
+            auto v = (*g).target(aIt);
             if (fnd_cycle(u, v)) {
             } else if (bfs(s, u) && bfs(v, t)) {
                 dec_path(s, u);
                 dec_path(v, t);
-                res_cap[*it] += 1;
-                res_cap[rev_edge[*it]] -= 1;
+                (*flow)[aIt] -= 1;
             }
             else {
                 std::cerr << "SOMETHING IS WRONG" << std::endl;
@@ -227,39 +220,36 @@ long long learning_augmented_paths_removal_lemon::find_flow() {
             double cur_seconds_elapsed = (double)std::chrono::duration_cast<std::chrono::milliseconds>(cur_time_elapsed).count() / 1000.0;
             if (cur_seconds_elapsed > 120) {
                 this->time_preprocess = 1000;
-                return 0;
+                return;
             }
         }
     }
 
 
-    long long cur_flow = 0;
-
-    for (auto it = edges.first; it != edges.second; it++) {
-        Traits::vertex_descriptor u, v;
-        u = source(*it, *g);
-        v = target(*it, *g);
+    aIt = lemon::SmartDigraph::ArcIt(*g);
+    for (; aIt != lemon::INVALID; ++aIt) {
+        auto u = (*g).source(aIt);
+        auto v = (*g).target(aIt);
         if (u == s)
-            cur_flow += cap[*it]-res_cap[*it];
-        cap[*it] = res_cap[*it];
-        if (cap[*it] > 0) {
-            add_edge(u, v, cap[*it]);
+            cur_flow += (*flow)[aIt];
+        if (v == s)
+            cur_flow += (*flow)[aIt];
+        long long cap1 = (*capacity)[aIt] - (*flow)[aIt];
+        if (cap1 > 0) {
+            add_edge(u, v, cap1);
+        }
+        long long cap2 = (*flow)[aIt];
+        if (cap2 > 0) {
+            add_edge(v, u, cap2);
         }
     }
-    auto time = std::chrono::steady_clock::now() - start_time;
-    double seconds_elapsed = (double)std::chrono::duration_cast<std::chrono::milliseconds>(time).count() / 1000.0;
-    this->time_preprocess = seconds_elapsed;
-
-    std::cout << "time elapsed during preparation: " << std::setprecision(3) << std::fixed << seconds_elapsed << std::endl;
-    std::cout << std::endl;
-    auto start_time_flow = std::chrono::steady_clock::now();
-    prflw->run();
-    long long get_flow = prflw->flowValue() + cur_flow;
-    auto time_flow = std::chrono::steady_clock::now() - start_time_flow;
-    double seconds_elapsed_flow = (double)std::chrono::duration_cast<std::chrono::milliseconds>(time_flow).count() / 1000.0;
-
-    std::cout << "time elapsed during flow search: " << std::setprecision(3) << std::fixed << seconds_elapsed_flow << std::endl;
-    std::cout << std::endl;
-    return get_flow;
+    this->built = true;
 }
 
+long long learning_augmented_paths_removal_lemon::find_flow() {
+    if (!built)
+        throw std::exception();
+    prflw->run();
+    long long get_flow = prflw->flowValue() + cur_flow;
+    return get_flow;
+}

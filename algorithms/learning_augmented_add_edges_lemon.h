@@ -6,27 +6,36 @@
 #define MAXFLOWBENCHMARK_LEARNING_AUGMENTED_ADD_EDGES_LEMON_H
 
 #include "algorithm.h"
+#include <unordered_map>
 #include <lemon/preflow.h>
 
 class learning_augmented_add_edges_lemon: public algorithm {
 public:
     learning_augmented_add_edges_lemon(
-        Graph& g, Vertex s, Vertex t,
+        lemon::SmartDigraph& g,
+        lemon::SmartDigraph::ArcMap<long long> *capacity,
+        lemon::SmartDigraph::Node s,
+        lemon::SmartDigraph::Node t,
         std::vector<std::pair<std::pair<int, int>, long long>> precomputed_flows
 
     );
     long long find_flow() override;
+    void build();
 private:
-    void add_edge(int u, int v, long long cap);
-    lemon::SmartDigraph gg;
-    lemon::SmartDigraph::ArcMap<long long> *caps;
+    bool built = false;
+    long long cur_flow;
+    void add_edge(lemon::SmartDigraph::Node u, lemon::SmartDigraph::Node v, long long cap);
+    lemon::SmartDigraph::ArcMap<long long> *flow;
+    lemon::SmartDigraph::ArcMap<long long> *capacity;
+    lemon::SmartDigraph::ArcMap<long long> *final_caps;
     lemon::Preflow<
         lemon::SmartDigraph,
         lemon::SmartDigraph::ArcMap<long long>
     > *prflw;
-    Graph *g;
-    Vertex s, t;
-    std::vector<lemon::SmartDigraph::Node> node_mapping;
+    lemon::SmartDigraph *g;
+    lemon::SmartDigraph gg;
+    lemon::SmartDigraph::Node s, t;
+    std::unordered_map<int, int> node_mapping;
 };
 
 

@@ -14,13 +14,7 @@ class random_util {
 public:
     random_util(double X);
     void randomize_capacities(MinCostGraph &g, std::vector<long long>& orig_cap, std::default_random_engine &generator);
-    void randomize_capacities(Graph &g, std::vector<long long>& orig_cap, std::default_random_engine &generator);
-    void randomize_capacities(
-        std::vector<lemon::ListDigraph> &graphs,
-        std::vector<lemon::ListDigraph::ArcMap<long long>* > &caps,
-        std::vector<long long>& orig_cap,
-        std::default_random_engine &generator
-    );
+    void randomize_capacities(lemon::SmartDigraph&g, lemon::SmartDigraph::ArcMap<long long> &capacities, std::vector<long long>& orig_cap, std::default_random_engine &generator);
 private:
     double X;
 };

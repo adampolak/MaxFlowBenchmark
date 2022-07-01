@@ -4,101 +4,107 @@
 
 #include "learning_augmented_add_edges_lemon.h"
 #include <utility>
-#include <chrono>
-#include <iomanip>
+#include <map>
+#include <set>
 
 learning_augmented_add_edges_lemon::learning_augmented_add_edges_lemon(
-    Graph& g, Vertex s, Vertex t,
+    lemon::SmartDigraph& g,
+    lemon::SmartDigraph::ArcMap<long long> *capacity,
+    lemon::SmartDigraph::Node s,
+    lemon::SmartDigraph::Node t,
     std::vector<std::pair<std::pair<int, int>, long long>> precomputed_flows
 ) {
     this->name = "add_edges";
     this->s = s;
     this->t = t;
     this->g = &g;
-    this->caps = new lemon::SmartDigraph::ArcMap<long long>(gg);
+    this->final_caps = new lemon::SmartDigraph::ArcMap<long long>(gg);
+    this->capacity = capacity;
+    this->flow = new lemon::SmartDigraph::ArcMap<long long>(g);
 
-    property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, g);
-    property_map<Graph, edge_residual_capacity_t>::type res_cap = get(edge_residual_capacity, g);
-    property_map<Graph, edge_reverse_t>::type rev_edge = get(edge_reverse, g);
 
-    int num_ver = num_vertices(g);
-    for (int i = 0; i < num_ver; i++)
-        node_mapping.push_back(gg.addNode());
+    auto nodeIt = lemon::SmartDigraph::NodeIt(g);
+    for (; nodeIt != lemon::INVALID; ++nodeIt) {
+        node_mapping[g.id(nodeIt)] = gg.id(gg.addNode());
+        int cnt = 0;
+        for (auto it = lemon::SmartDigraph::OutArcIt(g, nodeIt); it != lemon::INVALID; ++it) {
+            ++cnt;
+        }
+    }
     std::map<std::pair<int, int>, std::multiset<long long> > prec_flows;
-    for (int i = 0; i < precomputed_flows.size(); i++)
-        prec_flows[precomputed_flows[i].first].insert(precomputed_flows[i].second);
-    auto edges = boost::edges(g);
+    for (int i = 0; i < precomputed_flows.size(); i++) {
+        int u, v;
+        std::tie(u, v) = precomputed_flows[i].first;
+        prec_flows[{u, v}].insert(precomputed_flows[i].second);
+    }
 
-    for (auto it = edges.first; it != edges.second; it++) {
-        Traits::vertex_descriptor u, v;
-        if (cap[rev_edge[*it]] > cap[*it])
-            continue;
-        u = source(*it, g);
-        v = target(*it, g);
-        if (prec_flows[{u, v}].empty()) {
+    lemon::SmartDigraph::ArcIt aIt(g);
+
+    for (; aIt != lemon::INVALID; ++aIt) {
+        lemon::SmartDigraph::Node u, v;
+        u = g.source(aIt);
+        v = g.target(aIt);
+        if (prec_flows[{g.id(u), g.id(v)}].empty()) {
             assert(0);
         }
-        auto frst_flow = prec_flows[{u, v}].begin();
-        int precflow = *frst_flow;
-        prec_flows[{u, v}].erase(frst_flow);
-        res_cap[*it] = cap[*it] - precflow;
-        res_cap[rev_edge[*it]] = precflow;
+        auto frst_flow = prec_flows[{g.id(u), g.id(v)}].begin();
+        int precFlow = *frst_flow;
+        prec_flows[{g.id(u), g.id(v)}].erase(frst_flow);
+        (*flow)[aIt] = precFlow;
     }
 
-
-    lemon::SmartDigraph::Node S, T;
-    S = node_mapping[s];
-    T = node_mapping[t];
     this->prflw = new lemon::Preflow<lemon::SmartDigraph, lemon::SmartDigraph::ArcMap<long long>> (
-        gg, *caps, S, T
+        gg, *final_caps, gg.nodeFromId(node_mapping[g.id(s)]), gg.nodeFromId(node_mapping[g.id(t)])
     );
-
 }
 
-void learning_augmented_add_edges_lemon::add_edge(int u, int v, long long cap) {
+void learning_augmented_add_edges_lemon::add_edge(lemon::SmartDigraph::Node u, lemon::SmartDigraph::Node v, long long cap) {
+    assert(cap >= 0);
+    if (cap == 0)
+        return;
     lemon::SmartDigraph::Node U, V;
-    U = node_mapping[u];
-    V = node_mapping[v];
+    U = gg.nodeFromId(node_mapping[(*g).id(u)]);
+    V = gg.nodeFromId(node_mapping[(*g).id(v)]);
     lemon::SmartDigraph::Arc arc = gg.addArc(U, V);
-    (*caps)[arc] = cap;
+    (*final_caps)[arc] = cap;
 }
 
-long long learning_augmented_add_edges_lemon::find_flow() {
-    auto start_time = std::chrono::steady_clock::now();
-    long long cur_flow = 0;
-
-    property_map<Graph, edge_capacity_t>::type cap = get(edge_capacity, *g);
-    property_map<Graph, edge_residual_capacity_t>::type res_cap = get(edge_residual_capacity, *g);
-    property_map<Graph, edge_reverse_t>::type rev_edge = get(edge_reverse, *g);
+void learning_augmented_add_edges_lemon::build() {
+    this->built = true;
+    this->cur_flow = 0;
 
 
-    std::vector<std::pair< std::pair<Vertex, Vertex>, long long >  > badEdges;
+    std::vector<std::pair< std::pair<lemon::SmartDigraph::Node, lemon::SmartDigraph::Node>, long long >  > badEdges;
     long long redundant_flow = 0;
 
-    auto edges = boost::edges(*g);
-    for (auto it = edges.first; it != edges.second; it++) {
-        if (cap[*it] == 0)
+
+    lemon::SmartDigraph::ArcIt aIt(*g);
+    for (; aIt != lemon::INVALID; ++aIt) {
+        if ((*this->capacity)[aIt] == 0)
             continue;
-        Traits::vertex_descriptor u, v;
-        u = source(*it, *g);
-        v = target(*it, *g);
-        if (res_cap[*it] < 0) {
-            badEdges.push_back({{u, v}, -res_cap[*it]});
-            redundant_flow -= res_cap[*it];
-            res_cap[*it] = 0;
-            res_cap[rev_edge[*it]] = cap[*it];
+        lemon::SmartDigraph::Node v = g->source(aIt);
+        lemon::SmartDigraph::Node u = g->target(aIt);
+        long long cap1 = (*this->capacity)[aIt];
+        long long flow1 = (*this->flow)[aIt];
+        long long cap2 = 0ll;
+        long long flow2 = -flow1;
+        if ((*this->flow)[aIt] > (*this->capacity)[aIt]) {
+            badEdges.push_back({{v, u}, (*this->flow)[aIt] - (*this->capacity)[aIt] });
+            redundant_flow += badEdges.back().second;
+            flow1 = cap1;
+            flow2 = -cap1;
+            add_edge(u, v, cap2-flow2);
+        } else {
+            add_edge(v, u, cap1-flow1);
         }
         if (u == s)
-            cur_flow += cap[*it]-res_cap[*it];
+            cur_flow += flow1;
         if (v == s)
-            cur_flow += cap[rev_edge[*it]]-res_cap[rev_edge[*it]];
-        cap[*it] = res_cap[*it];
-        add_edge(u, v, cap[*it]);
-        cap[rev_edge[*it]] = res_cap[rev_edge[*it]];
-        add_edge(v, u, cap[rev_edge[*it]]);
+            cur_flow += flow2;
     }
+
     for (auto it = badEdges.begin(); it != badEdges.end(); it++) {
-        Vertex u, v;
+        lemon::SmartDigraph::Node u, v;
         std::tie(u, v) = it->first;
         long long decrease = it->second;
         {
@@ -120,24 +126,14 @@ long long learning_augmented_add_edges_lemon::find_flow() {
             add_edge(v, t, decrease);
         }
     }
+    cur_flow = cur_flow * 2 - redundant_flow;
+}
 
-
-    auto time = std::chrono::steady_clock::now() - start_time;
-    double seconds_elapsed = (double)std::chrono::duration_cast<std::chrono::milliseconds>(time).count() / 1000.0;
-    this->time_preprocess = seconds_elapsed;
-    std::cout << "time elapsed during preparation: " << std::setprecision(3) << std::fixed << seconds_elapsed << std::endl;
-    std::cout << std::endl;
-
-    auto start_time_flow = std::chrono::steady_clock::now();
+long long learning_augmented_add_edges_lemon::find_flow() {
+    if (!this->built)
+        throw std::exception();
     prflw->run();
-    long long get_flow = prflw->flowValue()-redundant_flow*2+cur_flow;
-    auto time_flow = std::chrono::steady_clock::now() - start_time_flow;
-    double seconds_elapsed_flow = (double)std::chrono::duration_cast<std::chrono::milliseconds>(time_flow).count() / 1000.0;
-
-    std::cout << "time elapsed during flow search: " << std::setprecision(3) << std::fixed << seconds_elapsed_flow << std::endl;
-    std::cout << std::endl;
+    long long get_flow = prflw->flowValue()-cur_flow;
     return get_flow;
 
-
-    return 0;
 }

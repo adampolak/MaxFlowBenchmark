@@ -11,16 +11,18 @@
 class edmonds_carp: public algorithm {
 public:
     edmonds_carp(
-        Graph& g, Vertex s, Vertex t
+        lemon::SmartDigraph& g,
+        lemon::SmartDigraph::ArcMap<long long> capacity,
+        lemon::SmartDigraph::Node s,
+        lemon::SmartDigraph::Node t
     );
     ~edmonds_carp();
     long long find_flow() override;
+    void build() override;
 private:
-    lemon::ListDigraph gg;
-    lemon::ListDigraph::ArcMap<long long> *caps;
     lemon::EdmondsKarp<
-        lemon::ListDigraph,
-        lemon::ListDigraph::ArcMap<long long>
+        lemon::SmartDigraph,
+        lemon::SmartDigraph::ArcMap<long long>
     > *edm_karp;
 };
 

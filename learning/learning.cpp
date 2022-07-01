@@ -2,7 +2,6 @@
 // Created by Max Zub on 04/05/2022.
 //
 
-#include <boost/graph/successive_shortest_path_nonnegative_weights.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/cycle_canceling.hpp>
 #include "learning.h"
@@ -28,14 +27,10 @@ void learning::start(
         mp_vertices[nodes_lemon[i]] = i;
     }
 
-    //MinCostGraph to_learn(num_vertices(g));
     property_map<MinCostGraph, edge_residual_capacity_t>::type main_res_cap = get(edge_residual_capacity, g);
     property_map<MinCostGraph, edge_capacity_t>::type main_cap = get(edge_capacity, g);
     lemon::ListDigraph::ArcMap<long long> cap(to_learn_lemon);
-    lemon::ListDigraph::ArcMap<long long> wght(to_learn_lemon);
-    //property_map<MinCostGraph, edge_residual_capacity_t>::type learn_res_cap = get(edge_residual_capacity, to_learn);
-    //property_map<MinCostGraph, edge_reverse_t>::type rev_edge = get(edge_reverse, to_learn);
-    //property_map<MinCostGraph, edge_weight_t>::type wght = get(edge_weight, to_learn);
+    lemon::ListDigraph::ArcMap<long long> weight(to_learn_lemon);
     random_util rand_gen(X);
 
     auto edges = boost::edges(g);
@@ -46,7 +41,7 @@ void learning::start(
 
     std::cerr << "n_edges: " << num_edges(g) << std::endl;
 
-    int subsample = std::max(1ll, samples/10);
+    long long subsample = std::max(1ll, samples/10);
 
     std::default_random_engine generator;
 
@@ -80,7 +75,7 @@ void learning::start(
         v = target(*edge, g);
         std::vector<long long> vec(storage[edge_i]);
         sort(vec.begin(), vec.end());
-        add_edge(to_learn_lemon, nodes_lemon[u], nodes_lemon[v], vec, cap, wght);
+        add_edge(to_learn_lemon, nodes_lemon[u], nodes_lemon[v], vec, cap, weight);
 
         if (edge_i % subedge == 0) {
             //std::cerr << edge_i + 1 << "/" << n_edges << " edges processed\r";
@@ -95,10 +90,10 @@ void learning::start(
 
     lemon::ListDigraph::Arc ts_edge = to_learn_lemon.addArc(nodes_lemon[t], nodes_lemon[s]);
     cap[ts_edge] = 1e9;
-    wght[ts_edge] = 0;
+    weight[ts_edge] = 0;
 
     lemon::CostScaling<lemon::ListDigraph> cs(to_learn_lemon);
-    cs.upperMap(cap).costMap(wght).run();
+    cs.upperMap(cap).costMap(weight).run();
 
     std::cerr << "min cost flow finish..." << std::endl;
 
