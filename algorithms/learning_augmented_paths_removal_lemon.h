@@ -42,7 +42,7 @@ private:
     bool bfs(lemon::SmartDigraph::Node s, lemon::SmartDigraph::Node t);
     void dec_path(lemon::SmartDigraph::Node s, lemon::SmartDigraph::Node t);
     bool fnd_cycle(lemon::SmartDigraph::Node s, lemon::SmartDigraph::Node t);
-    std::pair<bool, lemon::SmartDigraph::Node> dfs(lemon::SmartDigraph::Node v, lemon::SmartDigraph::Node u);*/
+    std::pair<bool, lemon::SmartDigraph::Node> dfs(lemon::SmartDigraph::Node v, lemon::SmartDigraph::Node u);
 };
 
 
