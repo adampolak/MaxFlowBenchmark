@@ -16,7 +16,7 @@
 #include <iomanip>
 #include <lemon/dimacs.h>
 
-const int ALGOS_COUNT = 2;
+const int ALGOS_COUNT = 3;
 
 void algos::run(
     const std::string& graph_filename,
@@ -98,7 +98,7 @@ void algos::run(
         algorithm* arr[ALGOS_COUNT] = {
             new preflow(g[0], capacity[0], s, t),
             new learning_augmented_add_edges_lemon(g[1], capacity[1], s, t, vec),
-            //new learning_augmented_paths_removal_lemon(g[2], s, t, vec),
+            new learning_augmented_paths_removal_lemon(g[2], capacity[2], s, t, vec),
         };
 
         for (int i = 0; i < ALGOS_COUNT; i++) {
