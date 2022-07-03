@@ -3,9 +3,6 @@
 //
 
 #include "learning_augmented_add_edges_lemon.h"
-#include <utility>
-#include <map>
-#include <set>
 
 learning_augmented_add_edges_lemon::learning_augmented_add_edges_lemon(
     lemon::SmartDigraph& g,
@@ -62,6 +59,8 @@ void learning_augmented_add_edges_lemon::add_edge(lemon::SmartDigraph::Node u, l
     assert(cap >= 0);
     if (cap == 0)
         return;
+    if (u == v)
+        return;
     lemon::SmartDigraph::Node U, V;
     U = gg.nodeFromId(node_mapping[(*g).id(u)]);
     V = gg.nodeFromId(node_mapping[(*g).id(v)]);
@@ -82,58 +81,44 @@ void learning_augmented_add_edges_lemon::build() {
     for (; aIt != lemon::INVALID; ++aIt) {
         if ((*this->capacity)[aIt] == 0)
             continue;
-        lemon::SmartDigraph::Node v = g->source(aIt);
-        lemon::SmartDigraph::Node u = g->target(aIt);
+        lemon::SmartDigraph::Node u = g->source(aIt);
+        lemon::SmartDigraph::Node v = g->target(aIt);
         long long cap1 = (*this->capacity)[aIt];
         long long flow1 = (*this->flow)[aIt];
-        long long cap2 = 0ll;
-        long long flow2 = -flow1;
-        if ((*this->flow)[aIt] > (*this->capacity)[aIt]) {
-            badEdges.push_back({{v, u}, (*this->flow)[aIt] - (*this->capacity)[aIt] });
-            redundant_flow += badEdges.back().second;
+        if (flow1 > cap1) {
+            badEdges.push_back({{u, v}, flow1 - cap1 });
+            redundant_flow += flow1 - cap1;
             flow1 = cap1;
-            flow2 = -cap1;
-            add_edge(u, v, cap2-flow2);
-        } else {
-            add_edge(v, u, cap1-flow1);
         }
         if (u == s)
             cur_flow += flow1;
         if (v == s)
-            cur_flow += flow2;
+            cur_flow += flow1;
+        add_edge(u, v, cap1-flow1);
+        add_edge(v, u, flow1);
     }
 
     for (auto it = badEdges.begin(); it != badEdges.end(); it++) {
         lemon::SmartDigraph::Node u, v;
         std::tie(u, v) = it->first;
         long long decrease = it->second;
-        {
+        cur_flow += decrease;
+        add_edge(v, s, decrease);
+        if (u == s)
             cur_flow += decrease;
-            if (v == s)
-                cur_flow -= decrease;
-            add_edge(v, s, decrease);
-        }
-        {
-            if (u == s)
-                cur_flow += decrease;
-            add_edge(t, u, decrease);
+        add_edge(t, u, decrease);
 
-        }
-        {
-            add_edge(s, u, decrease);
-        }
-        {
-            add_edge(v, t, decrease);
-        }
+        add_edge(s, u, decrease);
+        add_edge(v, t, decrease);
     }
-    cur_flow = cur_flow * 2 - redundant_flow;
+    cur_flow = cur_flow-redundant_flow*2;
 }
 
 long long learning_augmented_add_edges_lemon::find_flow() {
     if (!this->built)
         throw std::exception();
     prflw->run();
-    long long get_flow = prflw->flowValue()-cur_flow;
+    long long get_flow = prflw->flowValue()+cur_flow;
     return get_flow;
 
 }

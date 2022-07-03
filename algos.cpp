@@ -3,18 +3,7 @@
 //
 
 #include "algos.h"
-#include "algorithms/preflow.h"
-#include "algorithms/learning_augmented_add_edges_lemon.h"
-#include "algorithms/learning_augmented_paths_removal_lemon.h"
 
-#include <iostream>
-#include <fstream>
-#include <random>
-#include <learning/random_util.h>
-#include <utility>
-#include <chrono>
-#include <iomanip>
-#include <lemon/dimacs.h>
 
 const int ALGOS_COUNT = 3;
 
@@ -23,6 +12,7 @@ void algos::run(
     const std::string& preprocessed_flows_filename,
     const std::string& results_file,
     int test_samples,
+    int algorithms_bitmask,
     double X
 ) {
 
@@ -30,12 +20,14 @@ void algos::run(
 
     output_result << "boy_kol, preflow, add_edge_preflow" << std::endl;
 
-    std::cerr << results_file << std::endl;
+    std::cout << results_file << std::endl;
 
     random_util rand_gen(X);
 
     std::default_random_engine generator;
 
+
+    std::cout << test_samples << std::endl;
 
     for (int L = 0; L < test_samples; L++) {
         std::ifstream input_graph(graph_filename);
@@ -102,6 +94,8 @@ void algos::run(
         };
 
         for (int i = 0; i < ALGOS_COUNT; i++) {
+            if (!((algorithms_bitmask>>i)&1))
+                continue;
             std::cout << "looking for flow with \"" << arr[i]->name << "\" algorithm" << std::endl;
 
             arr[i]->build();
@@ -113,8 +107,7 @@ void algos::run(
             flows_returned[i] = found_flow;
             flows_returned_set.insert(found_flow);
 
-            double seconds_elapsed =
-                (double) std::chrono::duration_cast<std::chrono::milliseconds>(time).count() / 1000.0;
+            double seconds_elapsed = (double) std::chrono::duration_cast<std::chrono::milliseconds>(time).count() / 1000.0;
 
             std::cout << "time elapsed: " << std::setprecision(3) << std::fixed << seconds_elapsed << std::endl;
             std::cout << std::endl;

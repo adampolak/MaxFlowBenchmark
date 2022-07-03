@@ -2,142 +2,144 @@
 // Created by Max Zub on 04/05/2022.
 //
 
-#include <boost/graph/boykov_kolmogorov_max_flow.hpp>
-#include <boost/graph/cycle_canceling.hpp>
 #include "learning.h"
-#include "random_util.h"
-#include <iostream>
 
 void learning::start(
-        MinCostGraph &g,
-        Vertex l_s,
-        Vertex l_t,
-        long long samples,
-        double X
-        ) {
-
-    this->s = l_s;
-    this->t = l_t;
-    lemon::ListDigraph to_learn_lemon;
-    int n_vertices = num_vertices(g);
-    std::vector<lemon::ListDigraph::Node> nodes_lemon(n_vertices);
-    std::map<lemon::ListDigraph::Node, int> mp_vertices;
-    for (int i = 0; i < n_vertices; i++) {
-        nodes_lemon[i] = to_learn_lemon.addNode();
-        mp_vertices[nodes_lemon[i]] = i;
-    }
-
-    property_map<MinCostGraph, edge_residual_capacity_t>::type main_res_cap = get(edge_residual_capacity, g);
-    property_map<MinCostGraph, edge_capacity_t>::type main_cap = get(edge_capacity, g);
-    lemon::ListDigraph::ArcMap<long long> cap(to_learn_lemon);
-    lemon::ListDigraph::ArcMap<long long> weight(to_learn_lemon);
+    std::string graph_filename,
+    int samples_count,
+    double X
+    ) {
+    lemon::SmartDigraph g;
+    lemon::SmartDigraph::ArcMap<long long> capacities(g);
+    lemon::SmartDigraph::ArcMap<long long> flow(g);
+    lemon::SmartDigraph::ArcMap<long long> weights(g);
+    lemon::SmartDigraph::Node s, t;
+    dimacs_input dimacsInput;
+    dimacsInput.read(graph_filename, g, capacities, s, t);
     random_util rand_gen(X);
-
-    auto edges = boost::edges(g);
-
-    int n_edges = num_edges(g);
-
-    std::vector<std::vector<long long> > storage(n_edges);
-
-    std::cerr << "n_edges: " << num_edges(g) << std::endl;
-
-    long long subsample = std::max(1ll, samples/10);
-
     std::default_random_engine generator;
 
-    int edge_i = 0;
+
     std::vector<long long> orig_cap;
-    for (auto edge = edges.first; edge != edges.second; edge++) {
-        orig_cap.push_back(main_cap[*edge]);
+
+    auto aIt = lemon::SmartDigraph::ArcIt(g);
+    for (; aIt != lemon::INVALID; ++aIt) {
+        auto u = g.source(aIt), v = g.target(aIt);
+        orig_cap.push_back(capacities[aIt]);
     }
-    for (int i = 0; i < samples; i++) {
-        rand_gen.randomize_capacities(g, orig_cap, generator);
-        boykov_kolmogorov_max_flow(g, s, t);
-        edge_i = 0;
-        for (auto edge = edges.first; edge != edges.second; edge++, edge_i++) {
-            if (main_cap[*edge] != 0)
-                storage[edge_i].push_back(main_cap[*edge]-main_res_cap[*edge]);
+
+    std::map<int, std::vector<long long> > storage;
+
+
+    auto preflow = lemon::Preflow<lemon::SmartDigraph, lemon::SmartDigraph::ArcMap<long long> > (
+        g, capacities, s, t
+    );
+    preflow.flowMap(flow);
+
+    for (int i = 0; i < samples_count; i++) {
+        rand_gen.randomize_capacities(g, capacities, orig_cap, generator);
+
+        preflow.run();
+
+
+        auto aIt = lemon::SmartDigraph::ArcIt(g);
+        for (; aIt != lemon::INVALID; ++aIt) {
+            if (capacities[aIt] != 0) {
+                storage[g.id(aIt)].push_back(capacities[aIt]-flow[aIt]);
+            }
         }
-        if (i % subsample == 0) {
-            std::cerr << i + 1 << "/" << samples << " samples processed\r";
+        if (100*i/samples_count != 100*(i+1)/samples_count) {
+            std::cerr << 100*(i+1)/samples_count << "% of samples processed\r";
             std::cerr.flush();
         }
     }
+
     std::cerr << std::endl;
+    std::cerr << "start processing edges\n" << std::endl;
 
-    std::cerr << "start processing edges..." << std::endl;
-    int subedge = std::max(1, n_edges/1000);
-    edge_i = 0;
-    for (auto edge = edges.first; edge != edges.second; edge++, edge_i++) {
-        if (main_cap[*edge] == 0) continue;
-        Traits::vertex_descriptor u, v;
-        u = source(*edge, g);
-        v = target(*edge, g);
-        std::vector<long long> vec(storage[edge_i]);
+    aIt = lemon::SmartDigraph::ArcIt(g);
+    std::vector<std::vector<long long> > toAddCapacities;
+    std::vector<std::pair<lemon::SmartDigraph::Node, lemon::SmartDigraph::Node> > toAddVertices;
+    for (; aIt != lemon::INVALID; ++aIt) {
+        auto u = g.source(aIt);
+        auto v = g.target(aIt);
+        std::vector<long long> vec(storage[g.id(aIt)]);
         sort(vec.begin(), vec.end());
-        add_edge(to_learn_lemon, nodes_lemon[u], nodes_lemon[v], vec, cap, weight);
 
-        if (edge_i % subedge == 0) {
-            //std::cerr << edge_i + 1 << "/" << n_edges << " edges processed\r";
-            //std::cerr.flush();
-        }
+        toAddVertices.push_back({u, v});
+        toAddCapacities.push_back(vec);
     }
+
+    for (int i = 0; i < toAddVertices.size(); i++) {
+        lemon::SmartDigraph::Node u, v;
+        std::tie(u, v) = toAddVertices[i];
+        add_edge(g, u, v, toAddCapacities[i], capacities, weights);
+    }
+
+
     std::cerr << std::endl;
 
     std::cerr << "finished edges processing" << std::endl;
 
     std::cerr << "min cost flow start..." << std::endl;
 
-    lemon::ListDigraph::Arc ts_edge = to_learn_lemon.addArc(nodes_lemon[t], nodes_lemon[s]);
-    cap[ts_edge] = 1e9;
-    weight[ts_edge] = 0;
+    lemon::SmartDigraph::Arc ts_edge = g.addArc(t, s);
+    capacities[ts_edge] = 1e9;
+    weights[ts_edge] = 0;
 
-    lemon::CostScaling<lemon::ListDigraph> cs(to_learn_lemon);
-    cs.upperMap(cap).costMap(weight).run();
+    lemon::CostScaling<lemon::SmartDigraph> cost_scaling(g);
+    cost_scaling.upperMap(capacities).costMap(weights).run();
 
     std::cerr << "min cost flow finish..." << std::endl;
 
-    std::cerr << "total cost: " << cs.totalCost() << std::endl;
+    std::cerr << "total cost: " << cost_scaling.totalCost() << std::endl;
 
-    print_learned_edges(to_learn_lemon, cs, mp_vertices, cap);
+    learning::print_learned_edges(g, cost_scaling, capacities, s, t);
 
 }
 
 void learning::print_learned_edges(
-        lemon::ListDigraph &g,
-        lemon::CostScaling<lemon::ListDigraph> &cs,
-        std::map<lemon::ListDigraph::Node, int> &mp_vertices,
-        lemon::ListDigraph::ArcMap<long long> &cap
+        lemon::SmartDigraph &g,
+        lemon::CostScaling<lemon::SmartDigraph> &cs,
+        lemon::SmartDigraph::ArcMap<long long> &cap,
+        lemon::SmartDigraph::Node s,
+        lemon::SmartDigraph::Node t
     ) {
 
-    lemon::ListDigraph::ArcMap<long long> flowMap(g);
+    lemon::SmartDigraph::ArcMap<long long> flowMap(g);
     cs.flowMap(flowMap);
 
     std::map<std::pair<int, int>, long long> mp;
 
-    for (lemon::ListDigraph::ArcIt a(g); a != lemon::INVALID; ++a) {
-        int u = mp_vertices[g.source(a)], v = mp_vertices[g.target(a)];
-        if (u == t && v == s && cap[a] == 1e9)
+
+    for (lemon::SmartDigraph::ArcIt a(g); a != lemon::INVALID; ++a) {
+        auto u = g.source(a), v = g.target(a);
+        if (u == t && v == s && cap[a] == 1e9) {
             continue;
-        mp[{u, v}] += flowMap[a];
+        }
+        mp[{g.id(u), g.id(v)}] += flowMap[a];
     }
     for (auto it = mp.begin(); it != mp.end(); it++)
         std::cout << it->first.first+1 << ' ' << it->first.second+1 << ' ' << it->second << std::endl;
 }
 
 void learning::add_edge(
-        lemon::ListDigraph &g,
-        lemon::ListDigraph::Node u,
-        lemon::ListDigraph::Node v,
+        lemon::SmartDigraph &g,
+        lemon::SmartDigraph::Node u,
+        lemon::SmartDigraph::Node v,
         std::vector<long long> &computed_flows,
-        lemon::ListDigraph::ArcMap<long long> &cap,
-        lemon::ListDigraph::ArcMap<long long> &wght
+        lemon::SmartDigraph::ArcMap<long long> &cap,
+        lemon::SmartDigraph::ArcMap<long long> &wght
         ) {
+    if (u == v)
+        return;
     int samples = (int)computed_flows.size();
     for (int i = 0; i <= samples; i++) {
-        Traits::edge_descriptor e1, e2;
-        lemon::ListDigraph::Arc e = g.addArc(u, v);
-        cap[e] = (i == samples ? 1e7 : computed_flows[i]) - (i == 0 ? 0 : computed_flows[i-1]);
+        long long need_cap = (i == samples ? ((long long)1e9) : computed_flows[i]) - (i == 0 ? 0ll : computed_flows[i-1]);
+        if (need_cap == 0)
+            continue;
+        lemon::SmartDigraph::Arc e = g.addArc(u, v);
+        cap[e] = need_cap;
         int cur_weight = (samples - i) - i;
         wght[e] = -cur_weight;
     }

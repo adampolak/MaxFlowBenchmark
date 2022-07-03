@@ -5,9 +5,16 @@
 #ifndef MAXFLOWBENCHMARK_LEARNING_AUGMENTED_PATHS_REMOVAL_LEMON_H
 #define MAXFLOWBENCHMARK_LEARNING_AUGMENTED_PATHS_REMOVAL_LEMON_H
 
-#include "algorithm.h"
-#include <lemon/preflow.h>
+#include <utility>
+#include <chrono>
+#include <iomanip>
+#include <map>
+#include <set>
 #include <unordered_map>
+
+#include <lemon/preflow.h>
+
+#include <algorithms/algorithm.h>
 
 class learning_augmented_paths_removal_lemon: public algorithm {
 public:

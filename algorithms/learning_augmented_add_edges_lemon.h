@@ -5,9 +5,14 @@
 #ifndef MAXFLOWBENCHMARK_LEARNING_AUGMENTED_ADD_EDGES_LEMON_H
 #define MAXFLOWBENCHMARK_LEARNING_AUGMENTED_ADD_EDGES_LEMON_H
 
-#include "algorithm.h"
 #include <unordered_map>
+#include <utility>
+#include <map>
+#include <set>
+
 #include <lemon/preflow.h>
+
+#include <algorithms/algorithm.h>
 
 class learning_augmented_add_edges_lemon: public algorithm {
 public:
@@ -20,7 +25,7 @@ public:
 
     );
     long long find_flow() override;
-    void build();
+    void build() override;
 private:
     bool built = false;
     long long cur_flow;

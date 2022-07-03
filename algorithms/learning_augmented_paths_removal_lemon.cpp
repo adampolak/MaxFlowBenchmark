@@ -3,11 +3,6 @@
 //
 
 #include "learning_augmented_paths_removal_lemon.h"
-#include <utility>
-#include <chrono>
-#include <iomanip>
-#include <map>
-#include <set>
 
 
 learning_augmented_paths_removal_lemon::learning_augmented_paths_removal_lemon(
@@ -32,6 +27,8 @@ learning_augmented_paths_removal_lemon::learning_augmented_paths_removal_lemon(
             ++cnt;
         }
     }
+    this->s = s;
+    this->t = t;
     std::map<std::pair<int, int>, std::multiset<long long> > prec_flows;
     for (int i = 0; i < precomputed_flows.size(); i++) {
         int u, v;
@@ -72,7 +69,7 @@ bool learning_augmented_paths_removal_lemon::bfs(
         pr[(*g).id(nodeIt)] = -1;
     }
 
-    pr[(*g).id(nodeIt)] = 0;
+    pr[(*g).id(s)] = 0;
     q.push(s);
     while(!q.empty()) {
         auto v = q.front();
@@ -157,7 +154,6 @@ bool learning_augmented_paths_removal_lemon::fnd_cycle(
         while(s != t) {
             auto p = (*g).nodeFromId(pr[(*g).id(s)]);
             if (s == p) {
-                std::cerr << "NO" << std::endl;
                 exit(0);
             }
             auto aIt = lemon::SmartDigraph::OutArcIt(*g, p);
@@ -174,7 +170,7 @@ bool learning_augmented_paths_removal_lemon::fnd_cycle(
         }
         auto aIt = lemon::SmartDigraph::OutArcIt(*g, scp);
         for (; aIt != lemon::INVALID; ++aIt) {
-            if ((*flow)[aIt] || (*capacity)[aIt] == 0)
+            if ((*flow)[aIt] <= 0 || (*capacity)[aIt] == 0)
                 continue;
             auto u = (*g).target(aIt);
             if (u == t) {

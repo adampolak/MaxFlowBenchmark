@@ -27,7 +27,7 @@
 #include <lemon/error.h>
 /// \ingroup dimacs_group
 /// \file
-/// \brief DIMACS file format reader.
+/// \brief DIMACS file format dimacs_input.
 
 namespace lemon {
 
@@ -63,8 +63,8 @@ namespace lemon {
   ///This function starts seeking the beginning of the given file for the
   ///problem type and size info.
   ///The found data is returned in a special struct that can be evaluated
-  ///and passed to the appropriate reader function.
-  DimacsDescriptor dimacsType(std::istream& is)
+  ///and passed to the appropriate dimacs_input function.
+  inline DimacsDescriptor dimacsType(std::istream& is)
   {
     DimacsDescriptor r;
     std::string problem,str;
@@ -101,7 +101,7 @@ namespace lemon {
   }
 
 
-  /// \brief DIMACS minimum cost flow reader function.
+  /// \brief DIMACS minimum cost flow dimacs_input function.
   ///
   /// This function reads a minimum cost flow instance from DIMACS format,
   /// i.e. from a DIMACS file having a line starting with
@@ -257,7 +257,7 @@ namespace lemon {
     }
   }
 
-  /// \brief DIMACS maximum flow reader function.
+  /// \brief DIMACS maximum flow dimacs_input function.
   ///
   /// This function reads a maximum flow instance from DIMACS format,
   /// i.e. from a DIMACS file having a line starting with
@@ -291,7 +291,7 @@ namespace lemon {
     _readDimacs(is,g,capacity,s,t,infty,desc);
   }
 
-  /// \brief DIMACS shortest path reader function.
+  /// \brief DIMACS shortest path dimacs_input function.
   ///
   /// This function reads a shortest path instance from DIMACS format,
   /// i.e. from a DIMACS file having a line starting with
@@ -317,7 +317,7 @@ namespace lemon {
     _readDimacs(is, g, length, s, t, 0, desc);
   }
 
-  /// \brief DIMACS capacitated digraph reader function.
+  /// \brief DIMACS capacitated digraph dimacs_input function.
   ///
   /// This function reads an arc capacitated digraph instance from
   /// DIMACS 'max' or 'sp' format.
@@ -363,7 +363,7 @@ namespace lemon {
     g.addArc(s,t);
   }
 
-  /// \brief DIMACS plain (di)graph reader function.
+  /// \brief DIMACS plain (di)graph dimacs_input function.
   ///
   /// This function reads a plain (di)graph without any designated nodes
   /// and maps (e.g. a matching instance) from DIMACS format, i.e. from
