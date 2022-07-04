@@ -92,7 +92,7 @@ void learning::start(
     }
 
     lemon::CostScaling<lemon::SmartDigraph> cost_scaling(g);
-    auto algorithmResult = cost_scaling.upperMap(capacities).costMap(weights).lowerMap(lower).run();
+    auto algorithmResult = cost_scaling.upperMap(capacities).costMap(weights).run();
 
     if (algorithmResult == cost_scaling.OPTIMAL) {
         std::cerr << "OPTIMAL" << std::endl;
