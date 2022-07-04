@@ -13,6 +13,7 @@ void learning::start(
     lemon::SmartDigraph::ArcMap<long long> capacities(g);
     lemon::SmartDigraph::ArcMap<long long> flow(g);
     lemon::SmartDigraph::ArcMap<long long> weights(g);
+    lemon::SmartDigraph::ArcMap<long long> lower(g);
     lemon::SmartDigraph::Node s, t;
     dimacs_input dimacsInput;
     dimacsInput.read(graph_filename, g, capacities, s, t);
@@ -22,9 +23,7 @@ void learning::start(
 
     std::vector<long long> orig_cap;
 
-    auto aIt = lemon::SmartDigraph::ArcIt(g);
-    for (; aIt != lemon::INVALID; ++aIt) {
-        auto u = g.source(aIt), v = g.target(aIt);
+    for (auto aIt = lemon::SmartDigraph::ArcIt(g); aIt != lemon::INVALID; ++aIt) {
         orig_cap.push_back(capacities[aIt]);
     }
 
@@ -38,12 +37,15 @@ void learning::start(
 
     for (int i = 0; i < samples_count; i++) {
         rand_gen.randomize_capacities(g, capacities, orig_cap, generator);
+        for (auto arcIt = lemon::SmartDigraph::ArcIt(g); arcIt != lemon::INVALID; ++arcIt) {
+            flow[arcIt] = 0;
+        }
 
         preflow.run();
 
 
-        auto aIt = lemon::SmartDigraph::ArcIt(g);
-        for (; aIt != lemon::INVALID; ++aIt) {
+
+        for (auto aIt = lemon::SmartDigraph::ArcIt(g); aIt != lemon::INVALID; ++aIt) {
             if (capacities[aIt] != 0) {
                 storage[g.id(aIt)].push_back(capacities[aIt]-flow[aIt]);
             }
@@ -57,10 +59,9 @@ void learning::start(
     std::cerr << std::endl;
     std::cerr << "start processing edges\n" << std::endl;
 
-    aIt = lemon::SmartDigraph::ArcIt(g);
     std::vector<std::vector<long long> > toAddCapacities;
     std::vector<std::pair<lemon::SmartDigraph::Node, lemon::SmartDigraph::Node> > toAddVertices;
-    for (; aIt != lemon::INVALID; ++aIt) {
+    for (auto aIt = lemon::SmartDigraph::ArcIt(g); aIt != lemon::INVALID; ++aIt) {
         auto u = g.source(aIt);
         auto v = g.target(aIt);
         std::vector<long long> vec(storage[g.id(aIt)]);
@@ -84,11 +85,24 @@ void learning::start(
     std::cerr << "min cost flow start..." << std::endl;
 
     lemon::SmartDigraph::Arc ts_edge = g.addArc(t, s);
-    capacities[ts_edge] = 1e9;
+    capacities[ts_edge] = 1e15;
     weights[ts_edge] = 0;
+    for (auto aIt = lemon::SmartDigraph::ArcIt(g); aIt != lemon::INVALID; ++aIt) {
+        lower[aIt] = 0;
+    }
 
     lemon::CostScaling<lemon::SmartDigraph> cost_scaling(g);
-    cost_scaling.upperMap(capacities).costMap(weights).run();
+    auto algorithmResult = cost_scaling.upperMap(capacities).costMap(weights).lowerMap(lower).run();
+
+    if (algorithmResult == cost_scaling.OPTIMAL) {
+        std::cerr << "OPTIMAL" << std::endl;
+    }
+    else if (algorithmResult == cost_scaling.UNBOUNDED) {
+        std::cerr << "UNBOUNDED" << std::endl;
+    }
+    else if (algorithmResult == cost_scaling.INFEASIBLE) {
+        std::cerr << "INFEASIBLE" << std::endl;
+    }
 
     std::cerr << "min cost flow finish..." << std::endl;
 
@@ -111,16 +125,34 @@ void learning::print_learned_edges(
 
     std::map<std::pair<int, int>, long long> mp;
 
+    for (lemon::SmartDigraph::NodeIt node(g); node != lemon::INVALID; ++node) {
+        long long inSum = 0;
+        long long outSum = 0;
+        for (lemon::SmartDigraph::InArcIt inEdge(g, node); inEdge != lemon::INVALID; ++inEdge)
+            inSum += flowMap[inEdge];
+        for (lemon::SmartDigraph::OutArcIt outEdge(g, node); outEdge != lemon::INVALID; ++outEdge)
+            outSum += flowMap[outEdge];
+        if (inSum != outSum) {
+            std::cerr << g.id(node) << ' ' << inSum << ' ' << outSum << std::endl;
+            exit(0);
+        }
+    }
+
 
     for (lemon::SmartDigraph::ArcIt a(g); a != lemon::INVALID; ++a) {
         auto u = g.source(a), v = g.target(a);
         if (u == t && v == s && cap[a] == 1e9) {
             continue;
         }
+        if (flowMap[a] < 0) {
+            std::cerr << "kek " << g.id(u) << ' ' << g.id(v) << ' ' << flowMap[a] << std::endl;
+        }
         mp[{g.id(u), g.id(v)}] += flowMap[a];
+        if (mp[{g.id(u), g.id(v)}] < 0)
+            std::cerr << "lol " << g.id(u) << ' ' << g.id(v) << ' ' << mp[{g.id(u), g.id(v)}] << std::endl;
     }
     for (auto it = mp.begin(); it != mp.end(); it++)
-        std::cout << it->first.first+1 << ' ' << it->first.second+1 << ' ' << it->second << std::endl;
+        std::cout << it->first.first+1 << ' ' << it->first.second+1 << ' ' << std::max(0ll, it->second) << std::endl;
 }
 
 void learning::add_edge(
@@ -138,9 +170,16 @@ void learning::add_edge(
         long long need_cap = (i == samples ? ((long long)1e9) : computed_flows[i]) - (i == 0 ? 0ll : computed_flows[i-1]);
         if (need_cap == 0)
             continue;
+        if (need_cap < 0) {
+            std::cerr << "bad_edge " << g.id(u) << ' ' << g.id(v) << ' ' << need_cap << "\n";
+        }
         lemon::SmartDigraph::Arc e = g.addArc(u, v);
         cap[e] = need_cap;
         int cur_weight = (samples - i) - i;
         wght[e] = -cur_weight;
+        if (wght[e] < 0) {
+            if (cap[e] > 1000000)
+                std::cerr << "edge: " << g.id(u) << ' ' << g.id(v) << ' ' << cap[e] << ' ' << wght[e] << std::endl;
+        }
     }
 }
