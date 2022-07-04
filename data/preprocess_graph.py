@@ -1,4 +1,4 @@
-with open('BVZ-tsukuba/BVZ-tsukuba0.max') as f:
+with open('LB07-bunny-sml.max') as f:
     dct = {}
     S = 0
     T = 0
