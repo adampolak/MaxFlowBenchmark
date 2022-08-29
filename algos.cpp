@@ -73,9 +73,11 @@ void algos::run(
         std::set<long long> flows_returned_set;
         lemon::SmartDigraph::ArcIt aIt(g[0]);
 
-        std::vector<long long> orig_cap;
+        // std::vector<long long> orig_cap;
+        lemon::SmartDigraph::ArcMap<long long> orig_cap(g[0]);
         for (; aIt != lemon::INVALID; ++aIt) {
-            orig_cap.push_back((*capacity[0])[aIt]);
+            // orig_cap.push_back((*capacity[0])[aIt]);
+            orig_cap[aIt] = (*capacity[0])[aIt];
         }
 
         rand_gen.randomize_capacities(g[0], *capacity[0], orig_cap, generator);
