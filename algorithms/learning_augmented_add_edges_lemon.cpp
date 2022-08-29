@@ -4,6 +4,8 @@
 
 #include "learning_augmented_add_edges_lemon.h"
 
+#include <assert.h>
+
 learning_augmented_add_edges_lemon::learning_augmented_add_edges_lemon(
     lemon::SmartDigraph& g,
     lemon::SmartDigraph::ArcMap<long long> *capacity,

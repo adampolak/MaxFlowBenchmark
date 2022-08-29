@@ -4,6 +4,7 @@
 
 #include "learning_augmented_paths_removal_lemon.h"
 
+#include <assert.h>
 
 learning_augmented_paths_removal_lemon::learning_augmented_paths_removal_lemon(
     lemon::SmartDigraph& g,
