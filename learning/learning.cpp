@@ -4,29 +4,35 @@
 
 #include "learning.h"
 
-#include <assert.h>
+#include "distribution.h"
 
-void learning::start(
-    std::string graph_filename,
-    int samples_count,
-    double X
-    ) {
-    input_distribution in(graph_filename, X);
+#include "lemon/cost_scaling.h"
+#include "lemon/preflow.h"
+#include "lemon/smart_graph.h"
+
+#include <cassert>
+#include <iostream>
+#include <string>
+
+void learn_predictions(distribution &d, int n_samples, lemon::SmartDigraph::ArcMap<int64_t>& predictions) {
+    const lemon::SmartDigraph& graph = d.graph();
+    const lemon::SmartDigraph::Node s = d.s();
+    const lemon::SmartDigraph::Node t = d.t();
+
+    lemon::SmartDigraph::ArcMap<std::vector<int64_t>> flows(graph);
+
     std::default_random_engine generator;
-
-    lemon::SmartDigraph::ArcMap<std::vector<int64_t>> storage(in.graph());
-
-    for (int i = 0; i < samples_count; i++) {
-        lemon::SmartDigraph::ArcMap<int64_t> capacities(in.graph());
-        in.sample_capacities(capacities, generator);
+    for (int i = 0; i < n_samples; i++) {
+        lemon::SmartDigraph::ArcMap<int64_t> capacities(graph);
+        d.sample_capacities(capacities, generator);
         auto preflow = lemon::Preflow<lemon::SmartDigraph, lemon::SmartDigraph::ArcMap<int64_t> > (
-         in.graph(), capacities, in.s(), in.t()
+         graph, capacities, s, t
         );
         preflow.run();
-        for (auto aIt = lemon::SmartDigraph::ArcIt(in.graph()); aIt != lemon::INVALID; ++aIt)
-            storage[aIt].push_back(preflow.flow(aIt));
-        if (100 * i / samples_count != 100 * (i + 1) / samples_count) {
-            std::cerr << 100 * (i + 1) / samples_count << "% of samples processed\r";
+        for (auto aIt = lemon::SmartDigraph::ArcIt(graph); aIt != lemon::INVALID; ++aIt)
+            flows[aIt].push_back(preflow.flow(aIt));
+        if (100 * i / n_samples != 100 * (i + 1) / n_samples) {
+            std::cerr << 100 * (i + 1) / n_samples << "% of samples processed\r";
             std::cerr.flush();
         }
     }
@@ -38,37 +44,36 @@ void learning::start(
     lemon::SmartDigraph::ArcMap<int64_t> capacities(g_cost);
     lemon::SmartDigraph::ArcMap<int64_t> weights(g_cost);
 
-    g_cost.reserveNode(in.graph().maxNodeId());
-    g_cost.reserveArc(in.graph().maxArcId() * samples_count + 1);
+    g_cost.reserveNode(graph.maxNodeId());
+    g_cost.reserveArc(graph.maxArcId() * n_samples + 1);
     std::vector<lemon::SmartDigraph::Node> nodes;  // translates ids in g to nodes in g_cost
-    for (int id = 0; id < in.graph().maxNodeId(); ++id) {
-      nodes.push_back(g_cost.addNode());
-      assert(g_cost.id(node[id]) == id);
+    for (int id = 0; id <= graph.maxNodeId(); ++id) {
+        nodes.push_back(g_cost.addNode());
+        assert(g_cost.id(nodes[id]) == id);
     }
 
     int64_t zero_flow_cost = 0;
 
-    for (auto aIt = lemon::SmartDigraph::ArcIt(in.graph()); aIt != lemon::INVALID; ++aIt) {
-      storage[aIt].push_back(0);
-      storage[aIt].push_back(1e7);
-      assert(storage[aIt].size() == samples_count + 2);
-      sort(storage[aIt].begin(), storage[aIt].end());
-      auto u = nodes[in.graph().id(in.graph().source(aIt))];
-      auto v = nodes[in.graph().id(in.graph().source(aIt))];
-      for (int i = 0; i <= samples_count; i++) {
-        auto e = g_cost.addArc(u, v);
-        capacities[e] = storage[aIt][i + 1] - storage[aIt][i];
-        weights[e] = i - (samples_count - i);
-        if (i > 0)
-          zero_flow_cost += storage[aIt][i];
-      }
+    for (auto aIt = lemon::SmartDigraph::ArcIt(graph); aIt != lemon::INVALID; ++aIt) {
+        flows[aIt].push_back(0);
+        flows[aIt].push_back(1e7);
+        assert(flows[aIt].size() == n_samples + 2);
+        sort(flows[aIt].begin(), flows[aIt].end());
+        auto u = nodes[graph.id(graph.source(aIt))];
+        auto v = nodes[graph.id(graph.target(aIt))];
+        for (int i = 0; i <= n_samples; i++) {
+            auto e = g_cost.addArc(u, v);
+            capacities[e] = flows[aIt][i + 1] - flows[aIt][i];
+            weights[e] = i - (n_samples - i);
+            zero_flow_cost += flows[aIt][i];
+        }
     }
 
-    lemon::SmartDigraph::Arc ts_edge = g_cost.addArc(nodes[in.graph().id(in.t())], nodes[in.graph().id(in.s())]);
+    lemon::SmartDigraph::Arc ts_edge = g_cost.addArc(nodes[graph.id(t)], nodes[graph.id(s)]);
     capacities[ts_edge] = 1e9;
     weights[ts_edge] = 0;
 
-    std::cerr << "finished edges processing" << std::endl;
+    std::cerr << "finished processing edges" << std::endl;
     std::cerr << "min cost flow starts" << std::endl;
 
     lemon::CostScaling<lemon::SmartDigraph, int64_t> cost_scaling(g_cost);
@@ -90,12 +95,52 @@ void learning::start(
     std::cerr << "total cost: " << cost_scaling.totalCost() << std::endl;
     std::cerr << "real total cost: " << zero_flow_cost + cost_scaling.totalCost() << std::endl;
 
-    std::map<std::pair<int, int>, int64_t> mp;
-    for (lemon::SmartDigraph::ArcIt a(g_cost); a != lemon::INVALID; ++a) {
-        if (a == ts_edge)
+    std::map<std::pair<int, int>, int64_t> predictions_map;
+    for (lemon::SmartDigraph::ArcIt aIt(g_cost); aIt != lemon::INVALID; ++aIt) {
+        if (aIt == ts_edge)
             continue;
-        mp[{g_cost.id(g_cost.source(a)), g_cost.id(g_cost.source(a))}] += cost_scaling.flow(a);
+        predictions_map[{g_cost.id(g_cost.source(aIt)), g_cost.id(g_cost.target(aIt))}] += cost_scaling.flow(aIt);
     }
-    for (auto it = mp.begin(); it != mp.end(); it++)
-        std::cout << it->first.first + 1 << ' ' << it->first.second + 1 << ' ' << it->second << std::endl;
+
+    for (auto aIt = lemon::SmartDigraph::ArcIt(graph); aIt != lemon::INVALID; ++aIt) {
+        std::pair<int, int> key(graph.id(graph.source(aIt)), graph.id(graph.target(aIt)));
+        assert(predictions_map.count(key));
+        predictions[aIt] = predictions_map[key];
+    }
+    verify_predictions(graph, s, t, predictions);
+}
+
+void store_predictions(const lemon::SmartDigraph& graph, const lemon::SmartDigraph::ArcMap<int64_t>& predictions, const std::string& predictions_filename) {
+    std::ofstream out(predictions_filename);
+    if (!out) {
+        std::cerr << "Cannot open predictions file: " << predictions_filename << std::endl;
+        exit(1);
+    }
+    for (auto aIt = lemon::SmartDigraph::ArcIt(graph); aIt != lemon::INVALID; ++aIt)
+        out << predictions[aIt] << '\n';
+}
+
+void load_predictions(const lemon::SmartDigraph& graph, const std::string& predictions_filename, lemon::SmartDigraph::ArcMap<int64_t>& predictions) {
+    std::ifstream in(predictions_filename);
+    if (!in) {
+        std::cerr << "Cannot open predictions file: " << predictions_filename << std::endl;
+        exit(1);
+    }
+    for (auto aIt = lemon::SmartDigraph::ArcIt(graph); aIt != lemon::INVALID; ++aIt)
+        in >> predictions[aIt];
+}
+
+void verify_predictions(const lemon::SmartDigraph& graph, lemon::SmartDigraph::Node s, lemon::SmartDigraph::Node t, const lemon::SmartDigraph::ArcMap<int64_t>& predictions) {
+    for (auto aIt = lemon::SmartDigraph::ArcIt(graph); aIt != lemon::INVALID; ++aIt)
+        assert(predictions[aIt] >= 0);
+    for (auto nIt = lemon::SmartDigraph::NodeIt(graph); nIt != lemon::INVALID; ++nIt) {
+        if (nIt == s || nIt == t)
+            continue;
+        int64_t inflow = 0, outflow = 0;
+        for (auto aIt = lemon::SmartDigraph::InArcIt(graph, nIt); aIt != lemon::INVALID; ++aIt)
+            inflow += predictions[aIt];
+        for (auto aIt = lemon::SmartDigraph::OutArcIt(graph, nIt); aIt != lemon::INVALID; ++aIt)
+            outflow += predictions[aIt];
+        assert(inflow == outflow);
+    }
 }

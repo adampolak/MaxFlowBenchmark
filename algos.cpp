@@ -8,13 +8,16 @@
 const int ALGOS_COUNT = 3;
 
 void algos::run(
-    const std::string& graph_filename,
+    distribution& d,
     const std::string& preprocessed_flows_filename,
     const std::string& results_file,
-    int test_samples,
-    int algorithms_bitmask,
-    double X
+    int n_test_samples,
+    int algorithms_bitmask
 ) {
+
+    lemon::SmartDigraph& graph = const_cast<lemon::SmartDigraph&>(d.graph());
+    const lemon::SmartDigraph::Node s = d.s();
+    const lemon::SmartDigraph::Node t = d.t();
 
     std::ofstream output_result(results_file);
 
@@ -22,77 +25,42 @@ void algos::run(
 
     std::cout << results_file << std::endl;
 
-    random_util rand_gen(X);
-
     std::default_random_engine generator;
 
 
-    std::cout << test_samples << std::endl;
+    std::cout << n_test_samples << std::endl;
 
-    for (int L = 0; L < test_samples; L++) {
-        std::ifstream input_graph(graph_filename);
-        if (!input_graph) {
-            std::cerr << "cannot open file: " << graph_filename << std::endl;
-            exit(1);
+   std::ifstream input_preprocessed_flows(preprocessed_flows_filename);
+    std::vector<std::pair<std::pair<int, int>, long long> > vec;
+    if (input_preprocessed_flows) {
+        for (int i = 0; i < graph.arcNum(); i++) {
+            int a, b;
+            long long c;
+            input_preprocessed_flows >> a >> b >> c;
+            vec.push_back({{a-1, b-1}, c});
         }
+    }
 
-        lemon::SmartDigraph g[ALGOS_COUNT];
+    for (int L = 0; L < n_test_samples; L++) {
 
+        lemon::SmartDigraph::ArcMap<int64_t> capacityi(graph);
+        
 
-        lemon::SmartDigraph::ArcMap<long long>* capacity[ALGOS_COUNT];
-        for (int i = 0; i < ALGOS_COUNT; i++)
-            capacity[i] = new lemon::SmartDigraph::ArcMap<long long>(g[0]);
+        d.sample_capacities(capacityi, generator);
 
-        lemon::SmartDigraph::Node s, t;
-
-
-        lemon::readDimacsMax(input_graph, g[0], *(capacity[0]), s, t);
-
-        input_graph.close();
-
-        for (int i = 1; i < ALGOS_COUNT; i++) {
-            std::ifstream input_graph(graph_filename);
-            lemon::readDimacsMax(input_graph, g[i], *(capacity[i]), s, t);
-            input_graph.close();
-        }
-
-        std::ifstream input_preprocessed_flows(preprocessed_flows_filename);
-        int num_edge = g[0].arcNum();
-        std::vector<std::pair<std::pair<int, int>, long long> > vec;
-        if (input_preprocessed_flows) {
-            for (int i = 0; i < num_edge; i++) {
-                int a, b;
-                long long c;
-                input_preprocessed_flows >> a >> b >> c;
-                vec.push_back({{a-1, b-1}, c});
-            }
-        }
+        lemon::SmartDigraph::ArcMap<long long> capacity(graph);
+        for (auto aIt = lemon::SmartDigraph::ArcIt(graph); aIt != lemon::INVALID; ++aIt)
+            capacity[aIt] = capacityi[aIt];
 
 
-        long long flows_returned[ALGOS_COUNT];
+        int64_t flows_returned[ALGOS_COUNT];
         std::set<long long> flows_returned_set;
-        lemon::SmartDigraph::ArcIt aIt(g[0]);
-
-        // std::vector<long long> orig_cap;
-        lemon::SmartDigraph::ArcMap<long long> orig_cap(g[0]);
-        for (; aIt != lemon::INVALID; ++aIt) {
-            // orig_cap.push_back((*capacity[0])[aIt]);
-            orig_cap[aIt] = (*capacity[0])[aIt];
-        }
-
-        rand_gen.randomize_capacities(g[0], *capacity[0], orig_cap, generator);
-        for (int i = 1; i < ALGOS_COUNT; i++) {
-            lemon::SmartDigraph::ArcIt aIt0(g[0]);
-            lemon::SmartDigraph::ArcIt aItI(g[i]);
-            for (; aIt0 != lemon::INVALID; ++aIt0, ++aItI) {
-                (*capacity[i])[aItI] = (*capacity[0])[aIt0];
-            }
-        }
+        lemon::SmartDigraph::ArcIt aIt(graph);
 
         algorithm* arr[ALGOS_COUNT] = {
-            new preflow(g[0], capacity[0], s, t),
-            new learning_augmented_add_edges_lemon(g[1], capacity[1], s, t, vec),
-            new learning_augmented_paths_removal_lemon(g[2], capacity[2], s, t, vec),
+            new preflow(graph, &capacity, s, t),
+            new learning_augmented_add_edges_lemon(graph, &capacity, s, t, vec),
+            new learning_augmented_paths_removal_lemon(graph, &capacity, s, t, vec),
         };
 
         for (int i = 0; i < ALGOS_COUNT; i++) {

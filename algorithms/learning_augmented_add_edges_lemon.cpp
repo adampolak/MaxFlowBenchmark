@@ -124,3 +124,12 @@ long long learning_augmented_add_edges_lemon::find_flow() {
     return get_flow;
 
 }
+
+int64_t learning_augmented_add_edges_lemon_run(
+        const lemon::SmartDigraph& graph,
+        const lemon::SmartDigraph::ArcMap<int64_t>& capacities,
+        lemon::SmartDigraph::Node s,
+        lemon::SmartDigraph::Node t,
+        const lemon::SmartDigraph::ArcMap<int64_t>& predictions) {
+    return 0;
+}

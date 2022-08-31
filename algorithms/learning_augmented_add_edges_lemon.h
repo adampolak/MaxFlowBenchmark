@@ -43,5 +43,11 @@ private:
     std::unordered_map<int, int> node_mapping;
 };
 
+int64_t learning_augmented_add_edges_lemon_run(
+        const lemon::SmartDigraph& graph,
+        const lemon::SmartDigraph::ArcMap<int64_t>& capacities,
+        lemon::SmartDigraph::Node s,
+        lemon::SmartDigraph::Node t,
+        const lemon::SmartDigraph::ArcMap<int64_t>& predictions);
 
 #endif //MAXFLOWBENCHMARK_LEARNING_AUGMENTED_ADD_EDGES_LEMON_H
