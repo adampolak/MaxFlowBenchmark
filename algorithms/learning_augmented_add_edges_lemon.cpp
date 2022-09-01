@@ -5,6 +5,8 @@
 #include "learning_augmented_add_edges_lemon.h"
 
 #include <assert.h>
+#include <chrono>
+#include <iomanip>
 
 learning_augmented_add_edges_lemon::learning_augmented_add_edges_lemon(
     lemon::SmartDigraph& g,
@@ -120,16 +122,11 @@ long long learning_augmented_add_edges_lemon::find_flow() {
     if (!this->built)
         throw std::exception();
     prflw->run();
+    auto start_time = std::chrono::steady_clock::now();
     long long get_flow = prflw->flowValue()+cur_flow;
+    auto time = std::chrono::steady_clock::now() - start_time;
+    double seconds_elapsed = (double) std::chrono::duration_cast<std::chrono::milliseconds>(time).count() / 1000.0;
+    std::cout << "add edges preflow time: " << std::setprecision(3) << std::fixed << seconds_elapsed << std::endl;
     return get_flow;
 
-}
-
-int64_t learning_augmented_add_edges_lemon_run(
-        const lemon::SmartDigraph& graph,
-        const lemon::SmartDigraph::ArcMap<int64_t>& capacities,
-        lemon::SmartDigraph::Node s,
-        lemon::SmartDigraph::Node t,
-        const lemon::SmartDigraph::ArcMap<int64_t>& predictions) {
-    return 0;
 }

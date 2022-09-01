@@ -5,26 +5,19 @@
 #ifndef MAXFLOWBENCHMARK_PREFLOW_H
 #define MAXFLOWBENCHMARK_PREFLOW_H
 
-#include "algorithm.h"
 #include <lemon/preflow.h>
 
-class preflow: public algorithm {
-public:
-    preflow(
-        lemon::SmartDigraph& g,
-        lemon::SmartDigraph::ArcMap<long long> *capacity,
+inline int64_t preflow_run(
+        const lemon::SmartDigraph& graph,
+        const lemon::SmartDigraph::ArcMap<int64_t>& capacities,
         lemon::SmartDigraph::Node s,
-        lemon::SmartDigraph::Node t
-    );
-    ~preflow();
-    long long find_flow() override;
-    void build() override;
-private:
-    lemon::Preflow<
-        lemon::SmartDigraph,
-        lemon::SmartDigraph::ArcMap<long long>
-    > *prflw;
-};
+        lemon::SmartDigraph::Node t,
+        const lemon::SmartDigraph::ArcMap<int64_t>&) {
 
+    lemon::Preflow<lemon::SmartDigraph, lemon::SmartDigraph::ArcMap<int64_t>> preflow(
+        graph, capacities, s, t);
+    preflow.run();
+    return preflow.flowValue();
+}
 
 #endif //MAXFLOWBENCHMARK_PREFLOW_H

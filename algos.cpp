@@ -3,7 +3,8 @@
 //
 
 #include "algos.h"
-
+#include <cassert>
+#include "learning/learning.h"
 
 const int ALGOS_COUNT = 3;
 
@@ -15,7 +16,20 @@ void algos::run(
     int algorithms_bitmask
 ) {
 
-    lemon::SmartDigraph& graph = const_cast<lemon::SmartDigraph&>(d.graph());
+    typedef typeof(&preflow_run) AlgorithmPtr;
+    AlgorithmPtr ALGOS[ALGOS_COUNT] = {
+        preflow_run,
+        learning_augmented_add_edges_lemon_run,
+        learning_augmented_paths_removal_lemon_run,
+    };
+
+    std::string ANAMES[ALGOS_COUNT] = {
+        "preflow", "add_edges", "paths_removal"
+    };
+
+
+
+    const lemon::SmartDigraph& graph = d.graph();
     const lemon::SmartDigraph::Node s = d.s();
     const lemon::SmartDigraph::Node t = d.t();
 
@@ -27,19 +41,12 @@ void algos::run(
 
     std::default_random_engine generator;
 
-
     std::cout << n_test_samples << std::endl;
 
-   std::ifstream input_preprocessed_flows(preprocessed_flows_filename);
-    std::vector<std::pair<std::pair<int, int>, long long> > vec;
-    if (input_preprocessed_flows) {
-        for (int i = 0; i < graph.arcNum(); i++) {
-            int a, b;
-            long long c;
-            input_preprocessed_flows >> a >> b >> c;
-            vec.push_back({{a-1, b-1}, c});
-        }
-    }
+    lemon::SmartDigraph::ArcMap<int64_t> predictions(graph);
+    load_predictions(d.graph(), preprocessed_flows_filename, predictions);
+    verify_predictions(d.graph(), d.s(), d.t(), predictions);
+
 
     for (int L = 0; L < n_test_samples; L++) {
 
@@ -48,30 +55,17 @@ void algos::run(
 
         d.sample_capacities(capacityi, generator);
 
-        lemon::SmartDigraph::ArcMap<long long> capacity(graph);
-        for (auto aIt = lemon::SmartDigraph::ArcIt(graph); aIt != lemon::INVALID; ++aIt)
-            capacity[aIt] = capacityi[aIt];
-
 
         int64_t flows_returned[ALGOS_COUNT];
         std::set<long long> flows_returned_set;
-        lemon::SmartDigraph::ArcIt aIt(graph);
-
-        algorithm* arr[ALGOS_COUNT] = {
-            new preflow(graph, &capacity, s, t),
-            new learning_augmented_add_edges_lemon(graph, &capacity, s, t, vec),
-            new learning_augmented_paths_removal_lemon(graph, &capacity, s, t, vec),
-        };
 
         for (int i = 0; i < ALGOS_COUNT; i++) {
             if (!((algorithms_bitmask>>i)&1))
                 continue;
-            std::cout << "looking for flow with \"" << arr[i]->name << "\" algorithm" << std::endl;
-
-            arr[i]->build();
+            std::cout << "looking for flow with \"" << ANAMES[i] << "\" algorithm" << std::endl;
 
             auto start_time = std::chrono::steady_clock::now();
-            long long found_flow = arr[i]->find_flow();
+            long long found_flow = ALGOS[i](graph, capacityi, s, t, predictions);
             auto time = std::chrono::steady_clock::now() - start_time;
 
             flows_returned[i] = found_flow;
@@ -88,7 +82,7 @@ void algos::run(
         if (flows_returned_set.size() > 1) {
             std::cout << "flows_returned" << std::endl;
             for (int i = 0; i < ALGOS_COUNT; i++) {
-                std::cout << arr[i]->name << ": " << flows_returned[i] << std::endl;
+                std::cout << ANAMES[i] << ": " << flows_returned[i] << std::endl;
             }
             output_result.close();
             return;
