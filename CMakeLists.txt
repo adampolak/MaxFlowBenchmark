@@ -4,7 +4,7 @@ project(MaxFlowBenchmark)
 set(CMAKE_CXX_STANDARD 14)
 
 
-add_executable(MaxFlowBenchmark main.cpp algorithms/algorithm.h learning/learning.cpp learning/learning.h distribution.h algorithms/preflow.h algos.h algorithms/learning_augmented_add_edges_lemon.h algorithms/learning_augmented_paths_removal_lemon.h)
+add_executable(MaxFlowBenchmark main.cpp learning/learning.cpp learning/learning.h distribution.h algorithms/preflow.h algos.h algorithms/learning_augmented_add_edges_lemon.h algorithms/learning_augmented_paths_removal_lemon.h)
 
 include_directories(deps/lemon)
 include_directories(cmake-build-debug/deps/lemon)

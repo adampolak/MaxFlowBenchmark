@@ -28,7 +28,7 @@ inline int64_t learning_augmented_paths_removal_lemon_run(
             lemon::SmartDigraph::Node v = graph.target(aIt);
             flow[aIt] = 0;
             lemon::ConvertMap<lemon::SmartDigraph::ArcMap<int64_t>, bool> nonzeroflowedges(flow);
-            lemon::FilterArcs<const lemon::SmartDigraph, typeof(nonzeroflowedges)> adapted_graph(graph, nonzeroflowedges);
+            auto adapted_graph = lemon::filterArcs(graph, nonzeroflowedges);
             while (delta--) {
                 lemon::Path<lemon::SmartDigraph> path_front, path_back, cycle;
                 bool found = ((
