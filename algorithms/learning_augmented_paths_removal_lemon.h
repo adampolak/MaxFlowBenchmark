@@ -5,53 +5,11 @@
 #ifndef MAXFLOWBENCHMARK_LEARNING_AUGMENTED_PATHS_REMOVAL_LEMON_H
 #define MAXFLOWBENCHMARK_LEARNING_AUGMENTED_PATHS_REMOVAL_LEMON_H
 
-#include <utility>
-#include <chrono>
-#include <iomanip>
-#include <map>
-#include <cassert>
-#include <set>
-#include <unordered_map>
-
+#include <lemon/adaptors.h>
+#include <lemon/bfs.h>
 #include <lemon/preflow.h>
 
-#include <algorithms/algorithm.h>
-
-class learning_augmented_paths_removal_lemon: public algorithm {
-public:
-    learning_augmented_paths_removal_lemon(
-        lemon::SmartDigraph& g,
-        lemon::SmartDigraph::ArcMap<long long> *capacity,
-        lemon::SmartDigraph::Node s,
-        lemon::SmartDigraph::Node t,
-        std::vector<std::pair<std::pair<int, int>, long long>> precomputed_flows
-        );
-    long long find_flow() override;
-    void build() override;
-private:
-    void add_edge(lemon::SmartDigraph::Node u, lemon::SmartDigraph::Node v, long long cap);
-    std::unordered_map<int, int> node_mapping;
-
-
-    lemon::SmartDigraph gg;
-    lemon::SmartDigraph *g;
-    lemon::SmartDigraph::ArcMap<long long> *flow;
-    lemon::SmartDigraph::ArcMap<long long> *capacity;
-    lemon::SmartDigraph::ArcMap<long long> *final_caps;
-    lemon::Preflow<
-        lemon::SmartDigraph,
-        lemon::SmartDigraph::ArcMap<long long>
-    > *prflw;
-    lemon::SmartDigraph::Node s, t;
-    bool built = false;
-    long long cur_flow = 0;
-    std::unordered_map<int, int> pr;
-
-    bool bfs(lemon::SmartDigraph::Node s, lemon::SmartDigraph::Node t);
-    void dec_path(lemon::SmartDigraph::Node s, lemon::SmartDigraph::Node t);
-    bool fnd_cycle(lemon::SmartDigraph::Node s, lemon::SmartDigraph::Node t);
-    std::pair<bool, lemon::SmartDigraph::Node> dfs(lemon::SmartDigraph::Node v, lemon::SmartDigraph::Node u);
-};
+#include <iostream>
 
 inline int64_t learning_augmented_paths_removal_lemon_run(
         const lemon::SmartDigraph& graph,
@@ -60,28 +18,44 @@ inline int64_t learning_augmented_paths_removal_lemon_run(
         lemon::SmartDigraph::Node t,
         const lemon::SmartDigraph::ArcMap<int64_t>& predictions) {
 
-    lemon::SmartDigraph _graph;
-    lemon::SmartDigraph::ArcMap<long long> _capacities(_graph);
-    std::vector<std::pair<std::pair<int, int>, long long>> vec;
-
-    lemon::DigraphCopy<lemon::SmartDigraph, lemon::SmartDigraph> gc(graph, _graph);
-    lemon::SmartDigraph::NodeMap<lemon::SmartDigraph::Node> nr(graph);
-    gc.nodeRef(nr);
-    gc.arcMap(capacities, (lemon::SmartDigraph::ArcMap<int64_t>&)_capacities);
-    gc.run();
-    s = nr[s];
-    t = nr[t];
-
+    lemon::SmartDigraph::ArcMap<int64_t> flow(graph);
     for (lemon::SmartDigraph::ArcIt aIt(graph); aIt != lemon::INVALID; ++aIt)
-        vec.push_back(std::make_pair(
-            std::make_pair(_graph.id(nr[graph.source(aIt)]), _graph.id(nr[graph.target(aIt)])),
-            predictions[aIt]));
-
-
-    learning_augmented_paths_removal_lemon a(_graph, &_capacities, s, t, vec);
-    a.build();
-    return a.find_flow();
-
+      flow[aIt] = predictions[aIt];
+    for (lemon::SmartDigraph::ArcIt aIt(graph); aIt != lemon::INVALID; ++aIt) {
+        while (flow[aIt] > capacities[aIt]) {
+            int64_t delta = flow[aIt] - capacities[aIt];
+            lemon::SmartDigraph::Node u = graph.source(aIt);
+            lemon::SmartDigraph::Node v = graph.target(aIt);
+            flow[aIt] = 0;
+            lemon::ConvertMap<lemon::SmartDigraph::ArcMap<int64_t>, bool> nonzeroflowedges(flow);
+            lemon::FilterArcs<const lemon::SmartDigraph, typeof(nonzeroflowedges)> adapted_graph(graph, nonzeroflowedges);
+            while (delta--) {
+                lemon::Path<lemon::SmartDigraph> path_front, path_back, cycle;
+                bool found = ((
+                    lemon::bfs(adapted_graph).path(path_front).run(s, u) &&
+                    lemon::bfs(adapted_graph).path(path_back).run(v, t)) ||
+                    lemon::bfs(adapted_graph).path(cycle).run(v, u));
+                if (!found) {
+                    std::cerr << "ERROR: neither path nor cycle found" << std::endl;
+                    exit(1);
+                }
+                for (auto path : {path_front, path_back, cycle})
+                    for (lemon::Path<lemon::SmartDigraph>::ArcIt pIt(path); pIt != lemon::INVALID; ++pIt)
+                        --flow[pIt];
+            }
+            flow[aIt] = capacities[aIt];
+        }
+    }
+    lemon::Preflow<lemon::SmartDigraph, lemon::SmartDigraph::ArcMap<int64_t>> preflow(
+        graph, capacities, s, t);
+    bool is_flow = preflow.init(flow);
+    if (!is_flow) {
+        std::cerr << "ERROR: modified predictions are not a (pre-)flow" << std::endl;
+        exit(1);
+    }
+    preflow.startFirstPhase();
+    preflow.startSecondPhase();
+    return preflow.flowValue();
 }
 
 #endif //MAXFLOWBENCHMARK_LEARNING_AUGMENTED_PATHS_REMOVAL_LEMON_H
