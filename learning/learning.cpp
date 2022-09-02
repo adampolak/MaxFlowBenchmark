@@ -14,7 +14,7 @@
 #include <iostream>
 #include <string>
 
-void learn_predictions(distribution &d, int n_samples, lemon::SmartDigraph::ArcMap<int64_t>& predictions) {
+void learn_predictions(const distribution &d, int n_samples, lemon::SmartDigraph::ArcMap<int64_t>& predictions) {
     const lemon::SmartDigraph& graph = d.graph();
     const lemon::SmartDigraph::Node s = d.s();
     const lemon::SmartDigraph::Node t = d.t();

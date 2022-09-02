@@ -15,7 +15,7 @@
 
 class distribution {
   public:
-    distribution(const std::string &dimacs_filename, double sigma) : _capacities(_graph), _distribution(1.0, sigma) {
+    distribution(const std::string &dimacs_filename, double sigma) : _capacities(_graph), _sigma(sigma) {
         std::ifstream in(dimacs_filename);
         if (!in) {
             std::cerr << "Cannot open DIMACS file: " << dimacs_filename << std::endl;
@@ -31,15 +31,16 @@ class distribution {
     template<class Generator> void sample_capacities(
             lemon::SmartDigraph::ArcMap<int64_t> &sampled_capacities,
             Generator &g) const {
+        std::normal_distribution<double> distribution(1.0, _sigma);
         for (auto aIt = lemon::SmartDigraph::ArcIt(_graph); aIt != lemon::INVALID; ++aIt)
-            sampled_capacities[aIt] = (int64_t)(_capacities[aIt] * std::max(_distribution(g), 0.0));
+            sampled_capacities[aIt] = (int64_t)(_capacities[aIt] * std::max(distribution(g), 0.0));
     }
 
   private:
     lemon::SmartDigraph _graph;
     lemon::SmartDigraph::ArcMap<int64_t> _capacities;
     lemon::SmartDigraph::Node _s, _t;
-    mutable std::normal_distribution<double> _distribution;
+    double _sigma;
 };
 
 #endif //MAXFLOWBENCHMARK_DISTRIBUTION_H

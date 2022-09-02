@@ -27,7 +27,7 @@
 
 
 inline void algos_run(
-    distribution& d,
+    const distribution& d,
     const lemon::SmartDigraph::ArcMap<int64_t>& predictions,
     int n_test_samples,
     int algorithms_bitmask
