@@ -19,6 +19,7 @@
 
 #include "algorithms/preflow.h"
 #include "algorithms/learning_augmented_add_edges_lemon.h"
+#include "algorithms/learning_augmented_lower_bounds_lemon.h"
 #include "algorithms/learning_augmented_paths_removal_lemon.h"
 
 #include <cassert>
@@ -39,11 +40,12 @@ inline void algos_run(
     AlgorithmPtr ALGOS[ALGOS_COUNT] = {
         preflow_run,
         learning_augmented_add_edges_lemon_run,
-        learning_augmented_paths_removal_lemon_run,
+        learning_augmented_lower_bounds_lemon_run,
+        // learning_augmented_paths_removal_lemon_run,
     };
 
     std::string ANAMES[ALGOS_COUNT] = {
-        "preflow", "add_edges", "paths_removal"
+        "preflow", "add_edges", "lower_bounds"
     };
 
     const lemon::SmartDigraph& graph = d.graph();
