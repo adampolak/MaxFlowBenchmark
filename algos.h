@@ -36,18 +36,20 @@ inline void algos_run(
     int algorithms_bitmask
     ) {
 
-    const int N_ALGOS = 3;
+    const int N_ALGOS = 4;
     typedef typeof(&preflow_run) AlgorithmPtr;
     AlgorithmPtr ALGOS[N_ALGOS] = {
         preflow_run,
-        learning_augmented_add_edges_lemon_run,
+        preflow_cut,
+        learning_augmented_add_edges_lemon_cut,
         learning_augmented_lower_bounds_lemon_run,
         // learning_augmented_paths_removal_lemon_run,
     };
     std::string ANAMES[N_ALGOS] = {
-        "goldberg_tarjan",
-        "add_edges",
-        "lower_bounds",
+        "goldberg_tarjan_flow",
+        "goldberg_tarjan_cut",
+        "add_edges_cur",
+        "lower_bounds_flow",
         // "paths_removal",
     };
 

@@ -35,6 +35,6 @@ int main(int argc, char* argv[]) {
     if (test) {
         load_predictions(d.graph(), predictions_filename, predictions);
         verify_predictions(d.graph(), d.s(), d.t(), predictions);
-        algos_run(d, predictions, n_samples, seed, 4 + 2 + 1);
+        algos_run(d, predictions, n_samples, seed, 8 + 4 + 2 + 1);
     }
 }

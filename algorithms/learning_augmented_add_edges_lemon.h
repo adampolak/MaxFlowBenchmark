@@ -14,7 +14,7 @@
 
 #include <lemon/preflow.h>
 
-inline int64_t learning_augmented_add_edges_lemon_run(
+inline int64_t learning_augmented_add_edges_lemon_cut(
         const lemon::SmartDigraph& graph,
         const lemon::SmartDigraph::ArcMap<int64_t>& capacities,
         lemon::SmartDigraph::Node s,
@@ -63,7 +63,6 @@ inline int64_t learning_augmented_add_edges_lemon_run(
         exit(1);
     }
     preflow.startFirstPhase();
-    preflow.startSecondPhase();
     return preflow.flowValue() - offset;
 }
 
