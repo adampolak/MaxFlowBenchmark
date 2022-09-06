@@ -4,8 +4,6 @@ project(MaxFlowBenchmark)
 set(CMAKE_CXX_STANDARD 14)
 
 
-add_executable(MaxFlowBenchmark main.cpp learning/learning.cpp learning/learning.h distribution.h algorithms/preflow.h algos.h algorithms/learning_augmented_add_edges_lemon.h algorithms/learning_augmented_paths_removal_lemon.h algorithms/learning_augmented_lower_bounds_lemon.h)
-
 include_directories(deps/lemon)
 include_directories(cmake-build-debug/deps/lemon)
 include_directories(.)
@@ -16,10 +14,6 @@ FIND_PATH(LEMON_SOURCE_ROOT_DIR CMakeLists.txt
         NO_DEFAULT_PATH
         DOC "Location of LEMON source as a CMAKE subproject")
 
-
-
-message(STATUS ${LEMON_SOURCE_ROOT_DIR}kek)
-
 ADD_SUBDIRECTORY(${LEMON_SOURCE_ROOT_DIR} deps/lemon)
 
 SET(LEMON_INCLUDE_DIRS
@@ -27,4 +21,5 @@ SET(LEMON_INCLUDE_DIRS
         ${CMAKE_BINARY_DIR}/deps/lemon)
 SET(LEMON_LIBRARIES lemon)
 
-
+ADD_EXECUTABLE(MaxFlowBenchmark main.cpp learning/learning.cpp learning/learning.h distribution.h algorithms/preflow.h algos.h algorithms/learning_augmented_add_edges_lemon.h algorithms/learning_augmented_paths_removal_lemon.h algorithms/learning_augmented_lower_bounds_lemon.h)
+TARGET_LINK_LIBRARIES(MaxFlowBenchmark lemon)
