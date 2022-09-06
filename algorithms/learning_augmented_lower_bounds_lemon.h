@@ -59,7 +59,6 @@ inline int64_t learning_augmented_lower_bounds_lemon_run(
         lemon::SmartDigraph::ArcMap<int64_t>,
         lemon::SmartDigraph::ArcMap<int64_t>,
         lemon::SmartDigraph::NodeMap<int64_t>> circulation(rgraph, lower, upper, supplies);
-
     {
         lemon::TimeReport trc("DEBUG: circulation running time ");
         circulation.run();
@@ -79,9 +78,13 @@ inline int64_t learning_augmented_lower_bounds_lemon_run(
     for (lemon::SmartDigraph::ArcIt aIt(graph); aIt != lemon::INVALID; ++aIt)
         feasible_predictions[aIt] = predictions[aIt] - circulation.flow(arcref[aIt]);
 
+    int64_t feasible_flow_value = 0;
+    for (lemon::SmartDigraph::OutArcIt aIt(graph, s); aIt != lemon::INVALID; ++aIt)
+        feasible_flow_value += feasible_predictions[aIt];
+    std::cerr << "DEBUG: feasible flow value: " << feasible_flow_value << std::endl;
+
     lemon::Preflow<lemon::SmartDigraph, lemon::SmartDigraph::ArcMap<int64_t>> preflow(
         graph, capacities, s, t);
-    
     lemon::TimeReport trp("DEBUG: push-relabel running time ");
     bool is_flow = preflow.init(feasible_predictions);
     if (!is_flow) {
@@ -90,7 +93,9 @@ inline int64_t learning_augmented_lower_bounds_lemon_run(
     }
     preflow.startFirstPhase();
     preflow.startSecondPhase();
-    return preflow.flowValue();
+    int64_t result = preflow.flowValue();
+    std::cerr << "DEBUG: max flow value: " << result << std::endl;
+    return result;
 }
 
 #endif //MAXFLOWBENCHMARK_LEARNING_AUGMENTED_LOWER_BOUNDS_LEMON_H
