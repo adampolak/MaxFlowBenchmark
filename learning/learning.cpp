@@ -14,14 +14,14 @@
 #include <iostream>
 #include <string>
 
-void learn_predictions(const distribution &d, int n_samples, lemon::SmartDigraph::ArcMap<int64_t>& predictions) {
+void learn_predictions(const distribution &d, int n_samples, lemon::SmartDigraph::ArcMap<int64_t>& predictions, uint32_t seed) {
     const lemon::SmartDigraph& graph = d.graph();
     const lemon::SmartDigraph::Node s = d.s();
     const lemon::SmartDigraph::Node t = d.t();
 
     lemon::SmartDigraph::ArcMap<std::vector<int64_t>> flows(graph);
 
-    std::default_random_engine generator;
+    std::default_random_engine generator(seed);
     for (int i = 0; i < n_samples; i++) {
         lemon::SmartDigraph::ArcMap<int64_t> capacities(graph);
         d.sample_capacities(capacities, generator);

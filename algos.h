@@ -32,6 +32,7 @@ inline void algos_run(
     const distribution& d,
     const lemon::SmartDigraph::ArcMap<int64_t>& predictions,
     int n_test_samples,
+    uint32_t seed,
     int algorithms_bitmask
     ) {
 
@@ -54,7 +55,7 @@ inline void algos_run(
     const lemon::SmartDigraph::Node s = d.s();
     const lemon::SmartDigraph::Node t = d.t();
 
-    std::default_random_engine generator;
+    std::default_random_engine generator(seed);
 
     for (int i = 0; i < N_ALGOS; i++) {
         if (i > 0)

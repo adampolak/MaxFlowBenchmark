@@ -9,7 +9,7 @@
 
 #include "lemon/smart_graph.h"
 
-void learn_predictions(const distribution& d, int n_samples, lemon::SmartDigraph::ArcMap<int64_t>& predictions);
+void learn_predictions(const distribution& d, int n_samples, lemon::SmartDigraph::ArcMap<int64_t>& predictions, uint32_t seed);
 
 void store_predictions(const lemon::SmartDigraph& graph, const lemon::SmartDigraph::ArcMap<int64_t>& predictions, const std::string& predictions_filename);
 
